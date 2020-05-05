@@ -1,0 +1,219 @@
+sourceCode ::= (statement)*
+
+statement
+  ::= importStmt
+    | enumStmt
+    | simpleStmt ';'
+    | blockStmt
+    | tryCatchStmt
+    | ifStmt
+    | switchStmt
+    | whileStmt
+    | forStmt
+    | eachStmt
+    | functionDeclaration
+    | classDeclaration
+
+/* importStmt Example:
+    from httplib import {
+        Request  as HttpReq;
+        Response as HttpRes;
+    }
+*/
+moduleName ::= IDENTIFIER ('.' IDENTIFIER)*
+importElement ::= moduleName ('as' IDENTIFIER)? ';'
+importStmt ::= ('from' moduleName)? 'import' '{' importElement? '}'
+
+/* enumStmt Example:
+    enum Sex {
+        FEMALE = 0,
+        MALE,
+        SECRET
+    }
+*/
+enumElement ::= IDENTIFIER ('=' decimalLit)?
+enumStmt ::= 'enum' IDENTIFIER '{' enumElement (',' enumElement)* '}'
+
+nilLit ::= 'nil'
+decimalLit ::= [0-9]+
+octalLit ::= '0o' [0-7]+
+hexadecimalLit ::= '0x' [0-9a-fA-F]+
+binaryLit ::= '0b' [01]+
+floatLit ::= [0-9]+ '.' [0-9]+
+exponentLit ::= [0-9]+ ('.' [0-9]+)? 'e' ('+' | '-')? [0-9]+
+unicodeDigits ::= '\\' 'u' [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]
+hexBytesDigits ::= '\\' 'x' [0-9a-fA-F] [0-9a-fA-F]
+escapeValue ::= (unicodeDigits | hexBytesDigits | '\\' ['"abfnrtv\\])
+charLit ::= '\'' (~[\n\\] | escapeValue) '\''
+stringLit ::= '"' (~["\\] | escapeValue)*  '"'
+longStringLit ::= '`' (~'`')* '`'
+arrayLit ::= '[' expressionList? ']'
+mapElement ::= expression ':' expression
+mapLit ::= '{' mapElement (',' mapElement)* '}'
+literal
+    ::= nilLit
+    | decimalLit
+    | octalLit
+    | hexadecimalLit
+    | binaryLit
+    | floatLit
+    | exponentLit
+    | charLit
+    | stringLit
+    | longStringLit
+    | arrayLit
+    | mapLit
+operandName ::= IDENTIFIER ('.' IDENTIFIER)*
+operand ::= literal | operandName
+index ::= '[' expression ']'
+slice ::= '[' expression? ':' expression? ']'
+call ::= '(' expressionList? ')'
+primaryExpr ::= operand (index | slice | call)
+newInstanceExpression ::= 'new' typeDescription '(' expressionList ')'
+unaryExpr ::= ('-' | '!' | '~') expression
+expression
+    ::= primaryExpr
+    | newInstanceExpression
+    | unaryExpr
+    | expression ('*' | '/' | '%' | '<<' | '>>' | '&') expression
+    | expression ('+' | '-' | '|' | '^') expression
+    | expression ('==' | '!=' | '<' | '<=' | '>' | '>=') expression
+    | expression '&&' expression
+    | expression '||' expression
+expressionList ::= (expression (',' expression)*)?
+incDecStmt ::= expression ('++' | '--')
+breakStmt ::= 'break'
+continueStmt ::= 'continue'
+returnStmt ::= 'return' expressionList?
+mixAssignOperator ::= ('+' | '-' | '|' | '^' | '*' | '/' | '%' | '<<' | '>>' | '&') '='
+assignStmt ::= (expressionList '=' expressionList) | (operandName mixAssignOperator expression)
+typeName ::= IDENTIFIER ('.' IDENTIFIER)*
+typeLit ::= ('[' typeDescription ']') | (typeName '<' typeName (',' typeName)* '>')
+typeDescription ::= typeName | typeLit
+variableDeclElement ::= IDENTIFIER (typeDescription | (typeDescription? '=' expression))
+variableDeclStmt ::= ('var' | 'val') variableDeclElement (',' variableDeclElement)*
+simpleStmt
+    ::= expression
+    | incDecStmt
+    | breakStmt
+    | continueStmt
+    | returnStmt
+    | assignStmt
+    | variableDeclStmt
+
+blockStmt ::= '{' statement* '}'
+
+/* ifStmt Example:
+    if p.sex == FEMALE && p.age < 30 {
+        println("Welcome, young lady.");
+    } elif p.sex == MALE {
+        println("Hello, sir.");
+    }
+*/
+ifStmt ::= 'if' expression blockStmt ('elif' expression blockStmt)* ('else' blockStmt)?
+
+/* switchStmt Example:
+    switch tom.grade {
+        default {
+            throw new Exception("Incorrect grade value!");
+        }
+        case 0...59 {
+            println("Failed to pass this exam.");
+        }
+        case 60...70 {
+            println("Lucky pass!");
+        }
+        case 71...80 {
+            println("Not bad.");
+        }
+        case 81...100: {
+            println("Excellent!");
+        }
+    }
+*/
+valueCase ::= expression blockStmt
+rangeCase ::= expression '...' expression
+caseBlock ::= (valueCase | rangeCase) blockStmt
+switchStmt ::= 'switch' expression '{' ('default' blockStmt)? caseBlock* '}'
+
+/* whileStmt Example:
+    while p {
+        print(p.value);
+        if p.next {
+            print("->");
+        }
+        p = p.next;
+    }
+*/
+whileStmt ::= 'while' expression blockStmt
+
+/* forStmt Example:
+    for var i=0; i<arr.length; i++ {
+        println(arr[i]);
+    }
+*/
+forStmt ::= 'for' expression ';' expression ';' expression blockStmt
+
+/* eachStmt Example:
+    each i in arr {
+        println(i);
+    }
+*/
+eachStmt ::= 'each' IDENTIFIER 'in' expression blockStmt
+
+/* functionStmt Example:
+    fn fibonacci(n int) {
+        var a = n % 2, b = 1;
+        for var i = 0; i < n/2; i++ {
+            a += b;
+            b += a;
+        }
+
+        return a;
+    }
+*/
+argument ::= IDENTIFIER typeDescription
+argumentList ::= argument (',' argument)*
+resultList ::= typeDescription (',' typeDescription)*
+signature ::= '(' argumentList* ')' resultList?
+functionDeclaration ::= 'fn' IDENTIFIER signature blockStmt
+
+/* classStmt Example:
+    class VideoDisk : Disk <- Playable {
+        val time int;
+        var movieName string;
+        var movieDirector string;
+        var productionCompany string;
+
+        var hasBeenRented bool = false;
+        var renter Customer;
+
+        public rent(c Customer) {
+            this.renter = Customer;
+            this.hasBeenRented = true;
+        }
+    }
+
+    var cd1 = new VideoDisk(
+        time=6491,
+        movieName="孤岛漂流",
+        movieDirector="John",
+        productionCompany="Kaddish Movie"
+    );
+*/
+scopeKeyword ::= 'public' | 'private' | 'protected'
+classMemberVariable ::= scopeKeyword variableDeclStmt
+classMemberMethod ::= scopeKeyword IDENTIFIER signature blockStmt
+genericsArgs ::= '<' IDENTIFIER (',' IDENTIFIER)* '>'
+classDeclaration ::= 'class' IDENTIFIER genericsArgs ':' IDENTIFIER '{' (classMemberVariable | classMemberMethod)* '}'
+
+/* tryCatchStmt Example:
+    try {
+        val n = 3 / 0;
+    } catch e MathException {
+        println(e.stacktrace());
+    } finally {
+        println("hahaha, it's ok");
+    }
+*/
+tryCatchStmt ::= 'try' blockStmt ('catch' IDENTIFIER IDENTIFIER blockStmt)+ ('finally' blockStmt)?
