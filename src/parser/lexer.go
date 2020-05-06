@@ -2,6 +2,7 @@ package parser
 
 import (
 	. "coral-lang/src/exception"
+	"coral-lang/src/utils"
 	"io/ioutil"
 	"os"
 	"unicode/utf8"
@@ -291,8 +292,10 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 	resultType := TokenTypeDecimalInteger
 
 	if startFromZero {
-		lexer.GoNextChar() // 读入 '0'
-		str = "0"
+		// 把前置的无用 '0' 全部抛弃
+		for lexer.PeekChar().MatchRune('0') {
+			lexer.GoNextChar()
+		}
 	}
 
 	for {
@@ -333,8 +336,63 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 	return lexer.makeToken(resultType, str), nil
 }
 
+// 读出一个字符串，含转义字符的处理
 func (lexer *Lexer) ReadString() (*Token, *CoralError) {
+	var str string
+	lexer.GoNextChar() // 移过当前的 '"' 双引号
 
+	for !lexer.PeekChar().MatchRune('"') {
+		if lexer.PeekChar().MatchRune('\\') { // 可能遇到转义字符
+			switch lexer.PeekNextChar(lexer.PeekChar().ByteLength).Rune {
+			case 'a':
+				str += "\a"
+				lexer.GoNextCharByStep(2)
+			case 'b':
+				str += "\b"
+				lexer.GoNextCharByStep(2)
+			case 't':
+				str += "\t"
+				lexer.GoNextCharByStep(2)
+			case 'v':
+				str += "\v"
+				lexer.GoNextCharByStep(2)
+			case 'n':
+				str += "\n"
+				lexer.GoNextCharByStep(2)
+			case 'r':
+				str += "\r"
+				lexer.GoNextCharByStep(2)
+			case 'f':
+				str += "\f"
+				lexer.GoNextCharByStep(2)
+			case '"':
+				str += "\""
+				lexer.GoNextCharByStep(2)
+			case 'u':
+				// Unicode 需要是：\uXXXX 格式：
+				lexer.GoNextCharByStep(2) // 移过当前的 '\u'
+				unicodeBitCount := 0
+				sUnicode := ""
+				for lexer.PeekChar().IsLegalHexadecimal() {
+					unicodeBitCount++
+					sUnicode += string(lexer.PeekChar().Rune)
+					lexer.GoNextChar()
+				}
+				if unicodeBitCount != 4 {
+					// 说明不满 4 位，解码出错
+					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can't decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
+				}
+				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode)
+				str += gotUTF8Decoded
+			}
+		} else {
+			// 正常添加字符
+			str += string(lexer.PeekChar().Rune)
+			lexer.GoNextChar()
+		}
+	}
+
+	return lexer.makeToken(TokenTypeString, str), nil
 }
 
 // 产出 token，词法分析器的行号也移动字面值 s 的长度
@@ -500,7 +558,8 @@ func (lexer *Lexer) GetNextToken() *Token {
 				CoralErrorHandler(err)
 			}
 			return str
-			// TODO: 字符串等其他情况...
+
+			// TODO: 其他情况...
 		}
 	}
 

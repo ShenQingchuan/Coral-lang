@@ -3,7 +3,6 @@ package test
 import (
 	. "coral-lang/src/exception"
 	"coral-lang/src/parser"
-	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -58,17 +57,28 @@ func TestGoNextChar(t *testing.T) {
 	})
 }
 func TestReadDecimal(t *testing.T) {
-	testLexer := &parser.Lexer{}
-	parser.InitLexerFromString(testLexer, "386")
+	testLexer1 := &parser.Lexer{}
+	parser.InitLexerFromString(testLexer1, "386")
 
 	Convey("测试读入十进制整数", t, func() {
-		gotToken, err := testLexer.ReadDecimal(false)
+		gotToken, err := testLexer1.ReadDecimal(false)
 		if err != nil {
 			panic(err)
 		}
 		So(gotToken.Str, ShouldEqual, "386")
 		So(gotToken.Kind, ShouldEqual, parser.TokenTypeDecimalInteger)
-		fmt.Println(gotToken)
+	})
+
+	testLexer2 := &parser.Lexer{}
+	parser.InitLexerFromString(testLexer2, "000186")
+
+	Convey("测试读入十进制整数", t, func() {
+		gotToken, err := testLexer2.ReadDecimal(true)
+		if err != nil {
+			panic(err)
+		}
+		So(gotToken.Str, ShouldEqual, "186")
+		So(gotToken.Kind, ShouldEqual, parser.TokenTypeDecimalInteger)
 	})
 }
 func TestReadFloat(t *testing.T) {
@@ -149,5 +159,18 @@ func TestReadOctal(t *testing.T) {
 		}
 		So(gotToken.Str, ShouldEqual, "0o1073")
 		So(gotToken.Kind, ShouldEqual, parser.TokenTypeOctalInteger)
+	})
+}
+func TestReadString(t *testing.T) {
+	testLexer := &parser.Lexer{}
+	parser.InitLexerFromString(testLexer, "\"我就是\\t想装个逼：\\u77e5道unicode是这样的\"")
+
+	Convey("测试读入字符串（含转义字符）", t, func() {
+		gotToken, err := testLexer.ReadString()
+		if err != nil {
+			CoralErrorHandler(err)
+		}
+		So(gotToken.Str, ShouldEqual, "我就是\t想装个逼：知道unicode是这样的")
+		So(gotToken.Kind, ShouldEqual, parser.TokenTypeString)
 	})
 }

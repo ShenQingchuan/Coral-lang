@@ -5,4 +5,5 @@ const (
 	FileSystemOpenFileError
 	LexFloatFormatError
 	LexExponentFormatError
+	LexUnicodeEscapeFormatError
 )
