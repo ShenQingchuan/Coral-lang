@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"coral-lang/src/exception"
+	. "coral-lang/src/exception"
 	"io/ioutil"
 	"os"
 	"unicode/utf8"
@@ -119,7 +119,7 @@ type Lexer struct {
 func OpenSourceFile(filePath string) []byte {
 	file, err := os.Open(filePath)
 	if err != nil {
-		exception.CoralError("FileSystem", "Can't open source file: "+filePath)
+		CoralErrorHandler(NewCoralError("FileSystem", "Can't open source file: "+filePath, FileSystemOpenFileError))
 	}
 	if file != nil {
 		defer file.Close()
@@ -130,12 +130,7 @@ func OpenSourceFile(filePath string) []byte {
 }
 
 // 初始化词法分析器
-func InitLexer(lexer *Lexer, content []byte) {
-	lexer.Content = content
-	lexer.Line = 1
-	lexer.Col = 1
-	lexer.BytePos = 0
-
+func InitLexerKeywordMap(lexer *Lexer) {
 	lexer.KeywordMap = &map[string]TokenType{
 		"import":    TokenTypeImport,
 		"from":      TokenTypeFrom,
@@ -166,6 +161,20 @@ func InitLexer(lexer *Lexer, content []byte) {
 		"catch":     TokenTypeCatch,
 		"finally":   TokenTypeFinally,
 	}
+}
+func InitLexerFromString(lexer *Lexer, content string) {
+	lexer.Content = []byte(content)
+	lexer.Line = 1
+	lexer.Col = 1
+	lexer.BytePos = 0
+	InitLexerKeywordMap(lexer)
+}
+func InitLexerFromBytes(lexer *Lexer, content []byte) {
+	lexer.Content = content
+	lexer.Line = 1
+	lexer.Col = 1
+	lexer.BytePos = 0
+	InitLexerKeywordMap(lexer)
 }
 
 // 拾取当前游标所在位置的字符
@@ -240,8 +249,8 @@ func (uchar *UTF8Char) IsLegalBinary() bool {
 	return uchar.Rune == '0' || uchar.Rune == '1'
 }
 
-// 读出一个十六进制数的 token
-func (lexer *Lexer) ReadHexadecimal() *Token {
+// 读出一个十六进制整数的 token
+func (lexer *Lexer) ReadHexadecimal() (*Token, *CoralError) {
 	lexer.GoNextCharByStep(2) // skip '0x'
 	str := "0x"
 
@@ -249,44 +258,83 @@ func (lexer *Lexer) ReadHexadecimal() *Token {
 		str += string(lexer.PeekChar().Rune)
 		lexer.GoNextChar()
 	}
-	return lexer.makeToken(TokenTypeHexadecimalInteger, str)
+	return lexer.makeToken(TokenTypeHexadecimalInteger, str), nil
 }
 
-// 读出一个八进制数的 token
-func (lexer *Lexer) ReadOctal() *Token {
+// 读出一个八进制整数的 token
+func (lexer *Lexer) ReadOctal() (*Token, *CoralError) {
 	lexer.GoNextCharByStep(2) // 跳过 '0o'
 	str := "0o"
 	for lexer.PeekChar().IsLegalOctal() {
 		str += string(lexer.PeekChar().Rune)
 		lexer.GoNextChar()
 	}
-	return lexer.makeToken(TokenTypeOctalInteger, str)
+	return lexer.makeToken(TokenTypeOctalInteger, str), nil
 }
 
-// 读出一个二进制数的 token
-func (lexer *Lexer) ReadBinary() *Token {
+// 读出一个二进制整数的 token
+func (lexer *Lexer) ReadBinary() (*Token, *CoralError) {
 	lexer.GoNextCharByStep(2) // 跳过 '0o'
 	str := "0b"
 	for lexer.PeekChar().IsLegalBinary() {
 		str += string(lexer.PeekChar().Rune)
 		lexer.GoNextChar()
 	}
-	return lexer.makeToken(TokenTypeBinaryInteger, str)
+	return lexer.makeToken(TokenTypeBinaryInteger, str), nil
 }
 
-// 读出一个十进制数的 token
-func (lexer *Lexer) ReadDecimal(startFromZero bool) *Token {
+// 读出一个十进制整数 或 小数/科学记数法 token
+func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 	var str string
+	hadPoint := false
+	hadETag := false
+	resultType := TokenTypeDecimalInteger
+
 	if startFromZero {
 		lexer.GoNextChar() // 读入 '0'
 		str = "0"
 	}
 
-	for lexer.PeekChar().IsLegalDecimal() {
-		str += string(lexer.PeekChar().Rune)
-		lexer.GoNextChar()
+	for {
+		if lexer.PeekChar().IsLegalDecimal() {
+			str += string(lexer.PeekChar().Rune)
+			lexer.GoNextChar()
+		} else if lexer.PeekChar().MatchRune('.') {
+			if !hadPoint && !hadETag { // 读入小数点
+				hadPoint = true
+				resultType = TokenTypeFloat
+				str += string(lexer.PeekChar().Rune)
+				lexer.GoNextChar()
+			} else {
+				// 已经有了小数点，报错小数点重复
+				return nil, NewCoralError("Syntax", "multiple decimal point!", LexFloatFormatError)
+			}
+		} else if lexer.PeekChar().MatchRune('e') {
+			if !hadETag { // 读入 e 符号
+				hadETag = true
+				resultType = TokenTypeExponent
+				str += string(lexer.PeekChar().Rune)
+				lexer.GoNextChar()
+
+				// 此时已经移过 'e'
+				// 如果后方有 +/- 也一并读入
+				if lexer.PeekChar().MatchRune('+') || lexer.PeekChar().MatchRune('-') {
+					str += string(lexer.PeekChar().Rune)
+					lexer.GoNextChar()
+				}
+			} else {
+				// 科学记数法格式错误
+				return nil, NewCoralError("Syntax", "incorrect format for scientific notation!", LexExponentFormatError)
+			}
+		} else {
+			break // 不符合十进制整数、小数和科学记数法的格式条件
+		}
 	}
-	return lexer.makeToken(TokenTypeDecimalInteger, str)
+	return lexer.makeToken(resultType, str), nil
+}
+
+func (lexer *Lexer) ReadString() (*Token, *CoralError) {
+
 }
 
 // 产出 token，词法分析器的行号也移动字面值 s 的长度
@@ -307,7 +355,11 @@ func (lexer *Lexer) GetNextToken() *Token {
 		switch c.Rune {
 		default:
 			if c.IsLegalDecimal() {
-				return lexer.ReadDecimal(false)
+				decimal, err := lexer.ReadDecimal(false)
+				if err != nil {
+					panic(err)
+				}
+				return decimal
 			}
 		case '\t', ' ':
 			lexer.GoNextChar() // skip
@@ -419,13 +471,35 @@ func (lexer *Lexer) GetNextToken() *Token {
 			return lexer.makeToken(TokenTypeMinus, "-")
 		case '0':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('x') {
-				return lexer.ReadHexadecimal()
+				hexadecimal, err := lexer.ReadHexadecimal()
+				if err != nil {
+					CoralErrorHandler(err)
+				}
+				return hexadecimal
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('o') {
-				// return lexer.ReadOctal()
+				octal, err := lexer.ReadOctal()
+				if err != nil {
+					CoralErrorHandler(err)
+				}
+				return octal
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('b') {
-				// return lexer.ReadBinary()
+				binary, err := lexer.ReadBinary()
+				if err != nil {
+					CoralErrorHandler(err)
+				}
+				return binary
 			}
-			return lexer.ReadDecimal(true)
+			decimal, err := lexer.ReadDecimal(true)
+			if err != nil {
+				CoralErrorHandler(err)
+			}
+			return decimal
+		case '"':
+			str, err := lexer.ReadString()
+			if err != nil {
+				CoralErrorHandler(err)
+			}
+			return str
 			// TODO: 字符串等其他情况...
 		}
 	}

@@ -1,15 +1,24 @@
 package exception
 
 import (
+	"errors"
 	"fmt"
 	"os"
 )
 
-const (
-	NormalError = iota
-)
+type CoralError struct {
+	Err     error
+	ErrEnum int
+}
 
-func CoralError(errType string, msg string) {
-	fmt.Printf("* %s Error: %s", errType, msg)
-	os.Exit(NormalError)
+func NewCoralError(errKind string, msg string, errEnum int) *CoralError {
+	return &CoralError{
+		errors.New("* " + errKind + " Error: " + msg),
+		errEnum,
+	}
+}
+
+func CoralErrorHandler(c *CoralError) {
+	fmt.Println(c.Err)
+	os.Exit(c.ErrEnum)
 }
