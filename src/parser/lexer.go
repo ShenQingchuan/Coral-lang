@@ -5,6 +5,7 @@ import (
 	"coral-lang/src/utils"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"unicode/utf8"
 )
 
@@ -108,9 +109,9 @@ type UTF8Char struct {
 	ByteLength int  // 对应实际字节数
 }
 type Lexer struct {
-	Content     []byte          // 源代码的buffer
-	KeywordMap  *map[string]int // 关键字映射表
-	OperatorMap *map[string]int // 关键字映射表
+	Content     []byte         // 源代码的buffer
+	KeywordMap  map[string]int // 关键字映射表
+	OperatorMap map[string]int // 关键字映射表
 
 	Line, Col int // 记录行号列号
 	BytePos   int // 当前游标位置
@@ -132,7 +133,7 @@ func OpenSourceFile(filePath string) []byte {
 
 // 初始化词法分析器
 func InitLexerKeywordMap(lexer *Lexer) {
-	lexer.KeywordMap = &map[string]TokenType{
+	lexer.KeywordMap = map[string]TokenType{
 		"import":    TokenTypeImport,
 		"from":      TokenTypeFrom,
 		"as":        TokenTypeAs,
@@ -292,7 +293,10 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 	resultType := TokenTypeDecimalInteger
 
 	if startFromZero {
-		// 把前置的无用 '0' 全部抛弃
+		str += "0" // 记录一个 0 而抛弃所有其他无用的零
+		lexer.GoNextChar()
+
+		// 由十进制的特点，把前置的其他无用 '0' 全部抛弃
 		for lexer.PeekChar().MatchRune('0') {
 			lexer.GoNextChar()
 		}
@@ -333,6 +337,16 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 			break // 不符合十进制整数、小数和科学记数法的格式条件
 		}
 	}
+
+	// 如果科学记数法是 '0e' 开头，认为其无意义，抛出报错
+	if len(str) >= 2 && str[0:2] == "0e" {
+		return nil, NewCoralError("Syntax", "incorrect format for scientific notation! ['0e' is meaningless]", LexExponentFormatError)
+	}
+	// 如果 str 以 '0' 起头 (只是 "0" 则不管) -> 要考虑去掉头部无用的 '0'
+	if str != "0" && (str[0] == '0' && str[1] != '.') { // 不是 0. 起头的小数
+		str = str[1:]
+	}
+
 	return lexer.makeToken(resultType, str), nil
 }
 
@@ -395,9 +409,135 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 	return lexer.makeToken(TokenTypeString, str), nil
 }
 
+// 读出一个字符，含转义字符的处理
+func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
+	var str string
+	lexer.GoNextChar() // 移过当前的 ' 双引号
+
+	for !lexer.PeekChar().MatchRune('\'') {
+		if lexer.PeekChar().MatchRune('\\') { // 可能遇到转义字符
+			switch lexer.PeekNextChar(lexer.PeekChar().ByteLength).Rune {
+			case 'a':
+				str += "\a"
+				lexer.GoNextCharByStep(2)
+			case 'b':
+				str += "\b"
+				lexer.GoNextCharByStep(2)
+			case 't':
+				str += "\t"
+				lexer.GoNextCharByStep(2)
+			case 'v':
+				str += "\v"
+				lexer.GoNextCharByStep(2)
+			case 'n':
+				str += "\n"
+				lexer.GoNextCharByStep(2)
+			case 'r':
+				str += "\r"
+				lexer.GoNextCharByStep(2)
+			case 'f':
+				str += "\f"
+				lexer.GoNextCharByStep(2)
+			case '"':
+				str += "\""
+				lexer.GoNextCharByStep(2)
+			case 'u':
+				// Unicode 需要是：\uXXXX 格式：
+				lexer.GoNextCharByStep(2) // 移过当前的 '\u'
+				unicodeBitCount := 0
+				sUnicode := ""
+				for lexer.PeekChar().IsLegalHexadecimal() {
+					unicodeBitCount++
+					sUnicode += string(lexer.PeekChar().Rune)
+					lexer.GoNextChar()
+				}
+				if unicodeBitCount != 4 {
+					// 说明不满 4 位，解码出错
+					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can't decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
+				}
+				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode)
+				str += gotUTF8Decoded
+			}
+		} else {
+			// 正常添加字符
+			str += string(lexer.PeekChar().Rune)
+			lexer.GoNextChar()
+		}
+	}
+
+	return lexer.makeToken(TokenTypeRune, str), nil
+}
+
+func (lexer *Lexer) ReadIdentifier() (*Token, *CoralError) {
+	// 保证第一位不为数字
+	firstRuneMatcher := regexp.MustCompile(`[0-9]`) // 第一个字符一定不会是 switch 条件上的操作符、空白符等
+	restRuneMatcher := regexp.MustCompile(`[ \t\n;,(){}\[\].=!*/%^|&><+\-'"]`)
+	if firstRuneMatcher == nil {
+		return nil, NewCoralError("Compiler", "RegexExp creating error!", CompilerRegexExpCreatingFailed)
+	}
+	// 读入第一个字符
+	str := string(lexer.PeekChar().Rune)
+	if firstRuneMatcher.MatchString(str) {
+		return nil, NewCoralError("Syntax", "Digit can't be used for the first character of an identifier!", LexIdentifierFirstRuneCanNotBeDigit)
+	}
+	lexer.GoNextChar()
+	for lexer.BytePos < len(lexer.Content) &&
+		restRuneMatcher != nil &&
+		!restRuneMatcher.MatchString(string(lexer.PeekChar().Rune)) {
+		str += string(lexer.PeekChar().Rune)
+		lexer.GoNextChar()
+	}
+
+	if keywordType, isKeyword := lexer.KeywordMap[str]; isKeyword {
+		return lexer.makeToken(keywordType, str), nil
+	} // 如果是关键字 则 返回对应关键字的 token 类型
+	return lexer.makeToken(TokenTypeIdentifier, str), nil
+}
+
+// 跳过块注释
+func (lexer *Lexer) SkipBlockComment() *CoralError {
+	lexer.GoNextCharByStep(2) // 跳过 "/*"
+	nested := 1               // 初始嵌套层次为 1
+
+	current := lexer.PeekChar()
+	next := lexer.PeekNextChar(current.ByteLength)
+	for {
+		lexer.GoNextChar() // 首要任务 跳过当前注释内容
+
+		// 然后更新 current 和 next
+		current = lexer.PeekChar()
+		next = lexer.PeekNextChar(current.ByteLength)
+
+		if current.MatchRune('/') && next.MatchRune('*') {
+			nested++
+			if nested > 5 {
+				return NewCoralError("Syntax", "too many nested levels in a block comment!", LexBlockCommentTooNested)
+			}
+		}
+		if current.MatchRune('*') && next.MatchRune('/') {
+			nested--
+			lexer.GoNextCharByStep(2) // 移动 2 位移过 "*/"
+		}
+		if nested == 0 {
+			break
+		}
+	}
+
+	return nil
+}
+
+// 跳过行注释
+func (lexer *Lexer) SkipLineComment() {
+	// 直到换行符
+	for !lexer.PeekChar().MatchRune('\n') {
+		lexer.GoNextChar()
+	}
+}
+
 // 产出 token，词法分析器的行号也移动字面值 s 的长度
 func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 	lexer.Col += len(s)
+	// s 这个字符串的长度就是其中 UTF8 字符个数的长度
 	return &Token{
 		Line: lexer.Line,
 		Col:  lexer.Col,
@@ -407,161 +547,191 @@ func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 }
 
 // 词法分析器获取下一个 token
-func (lexer *Lexer) GetNextToken() *Token {
+func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 	for lexer.BytePos < len(lexer.Content) {
 		c := lexer.PeekChar()
 		switch c.Rune {
 		default:
 			if c.IsLegalDecimal() {
-				decimal, err := lexer.ReadDecimal(false)
-				if err != nil {
-					panic(err)
-				}
-				return decimal
+				return lexer.ReadDecimal(false)
 			}
+			return lexer.ReadIdentifier()
 		case '\t', ' ':
-			lexer.GoNextChar() // skip
+			lexer.GoNextChar() // skip whitespace
 		case '\n':
 			lexer.Line++
 			lexer.Col = 1
 			lexer.GoNextChar() // skip
 		case ';':
-			return lexer.makeToken(TokenTypeSemi, ";")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeSemi, ";"), nil
 		case ',':
-			return lexer.makeToken(TokenTypeColon, ",")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeColon, ","), nil
 		case '(':
-			return lexer.makeToken(TokenTypeLeftParen, "(")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeLeftParen, "("), nil
 		case ')':
-			return lexer.makeToken(TokenTypeRightParen, ")")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeRightParen, ")"), nil
 		case '{':
-			return lexer.makeToken(TokenTypeLeftBrace, "{")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeLeftBrace, "{"), nil
 		case '}':
-			return lexer.makeToken(TokenTypeRightBrace, "}")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeRightBrace, "}"), nil
 		case '[':
-			return lexer.makeToken(TokenTypeLeftBracket, "[")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeLeftBracket, "["), nil
 		case ']':
-			return lexer.makeToken(TokenTypeRightBracket, "]")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeRightBracket, "]"), nil
 		case '.':
-			return lexer.makeToken(TokenTypeDot, ".")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeDot, "."), nil
 		case '=':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypeDoubleEqual, "==")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleEqual, "=="), nil
 			}
-			return lexer.makeToken(TokenTypeEqual, "=")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeEqual, "="), nil
 		case '!':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypeBangEqual, "!=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeBangEqual, "!="), nil
 			}
-			return lexer.makeToken(TokenTypeBang, "!")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeBang, "!"), nil
 		case '*':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('*') {
-				lexer.makeToken(TokenTypeDoubleStar, "**")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleStar, "**"), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				lexer.makeToken(TokenTypeStarEqual, "*=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeStarEqual, "*="), nil
 			}
-			return lexer.makeToken(TokenTypeStar, "*")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeStar, "*"), nil
 		case '/':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypeSlashEqual, "/=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeSlashEqual, "/="), nil
+			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('*') {
+				err := lexer.SkipBlockComment()
+				if err != nil {
+					return nil, err // 可能的块注释略过时出错
+				}
+				continue
+			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('/') {
+				lexer.SkipLineComment()
+				continue
 			}
-			return lexer.makeToken(TokenTypeSlash, "/")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeSlash, "/"), nil
 		case '%':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypePercentEqual, "%=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypePercentEqual, "%="), nil
 			}
-			return lexer.makeToken(TokenTypePercent, "%")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypePercent, "%"), nil
 		case '^':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypeCaretEqual, "^=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeCaretEqual, "^="), nil
 			}
-			return lexer.makeToken(TokenTypeCaret, "^")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeCaret, "^"), nil
 		case '&':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('&') {
-				lexer.makeToken(TokenTypeDoubleAmpersand, "&&")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleAmpersand, "&&"), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				lexer.makeToken(TokenTypeAmpersandEqual, "&=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeAmpersandEqual, "&="), nil
 			}
-			return lexer.makeToken(TokenTypeAmpersand, "&")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeAmpersand, "&"), nil
 		case '|':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('|') {
-				lexer.makeToken(TokenTypeDoubleVertical, "||")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleVertical, "||"), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				lexer.makeToken(TokenTypeVerticalEqual, "|=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeVerticalEqual, "|="), nil
 			}
-			return lexer.makeToken(TokenTypeVertical, "|")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeVertical, "|"), nil
 		case '<':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('<') {
 				if lexer.PeekNextCharByStep(c.ByteLength, 2).MatchRune('=') {
-					return lexer.makeToken(TokenTypeDoubleLeftAngleEqual, "<<=")
+					lexer.GoNextCharByStep(3)
+					return lexer.makeToken(TokenTypeDoubleLeftAngleEqual, "<<="), nil
 				}
-				return lexer.makeToken(TokenTypeDoubleLeftAngle, "<<")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleLeftAngle, "<<"), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypeLeftAngleEqual, "<=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeLeftAngleEqual, "<="), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('-') {
-				return lexer.makeToken(TokenTypeLeftArrow, "<-")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeLeftArrow, "<-"), nil
 			}
-			return lexer.makeToken(TokenTypeLeftAngle, "<")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeLeftAngle, "<"), nil
 		case '>':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('>') {
 				if lexer.PeekNextCharByStep(c.ByteLength, 2).MatchRune('=') {
-					return lexer.makeToken(TokenTypeDoubleRightAngleEqual, ">>=")
+					lexer.GoNextCharByStep(3)
+					return lexer.makeToken(TokenTypeDoubleRightAngleEqual, ">>="), nil
 				}
-				return lexer.makeToken(TokenTypeDoubleRightAngle, ">>")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleRightAngle, ">>"), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypeRightAngleEqual, ">=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeRightAngleEqual, ">="), nil
 			}
-			return lexer.makeToken(TokenTypeRightAngle, ">")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeRightAngle, ">"), nil
 		case '+':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('+') {
-				return lexer.makeToken(TokenTypeDoublePlus, "++")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoublePlus, "++"), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypePlusEqual, "+=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypePlusEqual, "+="), nil
 			}
-			return lexer.makeToken(TokenTypePlus, "+")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypePlus, "+"), nil
 		case '-':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('-') {
-				return lexer.makeToken(TokenTypeDoubleMinus, "--")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleMinus, "--"), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
-				return lexer.makeToken(TokenTypeMinusEqual, "-=")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeMinusEqual, "-="), nil
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('>') {
-				return lexer.makeToken(TokenTypeRightArrow, "->")
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeRightArrow, "->"), nil
 			}
-			return lexer.makeToken(TokenTypeMinus, "-")
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeMinus, "-"), nil
 		case '0':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('x') {
-				hexadecimal, err := lexer.ReadHexadecimal()
-				if err != nil {
-					CoralErrorHandler(err)
-				}
-				return hexadecimal
+				return lexer.ReadHexadecimal()
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('o') {
-				octal, err := lexer.ReadOctal()
-				if err != nil {
-					CoralErrorHandler(err)
-				}
-				return octal
+				return lexer.ReadOctal()
 			} else if lexer.PeekNextChar(c.ByteLength).MatchRune('b') {
-				binary, err := lexer.ReadBinary()
-				if err != nil {
-					CoralErrorHandler(err)
-				}
-				return binary
+				return lexer.ReadBinary()
 			}
-			decimal, err := lexer.ReadDecimal(true)
-			if err != nil {
-				CoralErrorHandler(err)
-			}
-			return decimal
+			return lexer.ReadDecimal(true)
 		case '"':
-			str, err := lexer.ReadString()
-			if err != nil {
-				CoralErrorHandler(err)
-			}
-			return str
-
-			// TODO: 其他情况...
+			return lexer.ReadString()
+		case '\'':
+			return lexer.ReadRune()
 		}
 	}
 
-	return nil // TODO: 未知情况
+	return nil, nil
 }
