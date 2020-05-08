@@ -3,6 +3,7 @@ package parser
 import (
 	. "coral-lang/src/exception"
 	"coral-lang/src/utils"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -101,7 +102,7 @@ type TokenType = int
 type Token struct {
 	Line, Col int
 	Kind      TokenType
-	Str       string
+	Value     string
 }
 
 type UTF8Char struct {
@@ -112,6 +113,10 @@ type Lexer struct {
 	Content     []byte         // 源代码的buffer
 	KeywordMap  map[string]int // 关键字映射表
 	OperatorMap map[string]int // 关键字映射表
+
+	ParenCount   int
+	BracketCount int
+	BraceCount   int
 
 	Line, Col int // 记录行号列号
 	BytePos   int // 当前游标位置
@@ -132,7 +137,15 @@ func OpenSourceFile(filePath string) []byte {
 }
 
 // 初始化词法分析器
-func InitLexerKeywordMap(lexer *Lexer) {
+func InitLexerCommonOperations(lexer *Lexer) {
+	lexer.Line = 1
+	lexer.Col = 1
+	lexer.BytePos = 0
+
+	lexer.ParenCount = 0
+	lexer.BraceCount = 0
+	lexer.BracketCount = 0
+
 	lexer.KeywordMap = map[string]TokenType{
 		"import":    TokenTypeImport,
 		"from":      TokenTypeFrom,
@@ -166,17 +179,16 @@ func InitLexerKeywordMap(lexer *Lexer) {
 }
 func InitLexerFromString(lexer *Lexer, content string) {
 	lexer.Content = []byte(content)
-	lexer.Line = 1
-	lexer.Col = 1
-	lexer.BytePos = 0
-	InitLexerKeywordMap(lexer)
+	InitLexerCommonOperations(lexer)
 }
 func InitLexerFromBytes(lexer *Lexer, content []byte) {
 	lexer.Content = content
-	lexer.Line = 1
-	lexer.Col = 1
-	lexer.BytePos = 0
-	InitLexerKeywordMap(lexer)
+	InitLexerCommonOperations(lexer)
+}
+
+// Token 的 toString() 方法
+func (token *Token) toString() string {
+	return fmt.Sprintf("Line %d:%d  Type: %d, Value: %s", token.Line, token.Col, token.Kind, token.Value)
 }
 
 // 拾取当前游标所在位置的字符
@@ -396,7 +408,19 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 					// 说明不满 4 位，解码出错
 					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can't decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
 				}
-				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode)
+				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 4)
+				str += gotUTF8Decoded
+			case 'x':
+				// Unicode 需要是：\xXX 格式：
+				lexer.GoNextCharByStep(2) // 移过当前的 '\x'
+				unicodeBitCount := 0
+				sUnicode := ""
+				for lexer.PeekChar().IsLegalHexadecimal() {
+					unicodeBitCount++
+					sUnicode += string(lexer.PeekChar().Rune)
+					lexer.GoNextChar()
+				}
+				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 2)
 				str += gotUTF8Decoded
 			}
 		} else {
@@ -455,9 +479,22 @@ func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
 					// 说明不满 4 位，解码出错
 					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can't decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
 				}
-				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode)
+				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 4)
+				str += gotUTF8Decoded
+			case 'x':
+				// Unicode 需要是：\xXX 格式：
+				lexer.GoNextCharByStep(2) // 移过当前的 '\x'
+				unicodeBitCount := 0
+				sUnicode := ""
+				for lexer.PeekChar().IsLegalHexadecimal() {
+					unicodeBitCount++
+					sUnicode += string(lexer.PeekChar().Rune)
+					lexer.GoNextChar()
+				}
+				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 2)
 				str += gotUTF8Decoded
 			}
+
 		} else {
 			// 正常添加字符
 			str += string(lexer.PeekChar().Rune)
@@ -539,10 +576,10 @@ func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 	lexer.Col += len(s)
 	// s 这个字符串的长度就是其中 UTF8 字符个数的长度
 	return &Token{
-		Line: lexer.Line,
-		Col:  lexer.Col,
-		Kind: t,
-		Str:  s,
+		Line:  lexer.Line,
+		Col:   lexer.Col,
+		Kind:  t,
+		Value: s,
 	}
 }
 
@@ -570,21 +607,27 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 			return lexer.makeToken(TokenTypeColon, ","), nil
 		case '(':
 			lexer.GoNextChar()
+			lexer.ParenCount++
 			return lexer.makeToken(TokenTypeLeftParen, "("), nil
 		case ')':
 			lexer.GoNextChar()
+			lexer.ParenCount--
 			return lexer.makeToken(TokenTypeRightParen, ")"), nil
 		case '{':
 			lexer.GoNextChar()
+			lexer.BraceCount++
 			return lexer.makeToken(TokenTypeLeftBrace, "{"), nil
 		case '}':
 			lexer.GoNextChar()
+			lexer.BraceCount--
 			return lexer.makeToken(TokenTypeRightBrace, "}"), nil
 		case '[':
 			lexer.GoNextChar()
+			lexer.BracketCount++
 			return lexer.makeToken(TokenTypeLeftBracket, "["), nil
 		case ']':
 			lexer.GoNextChar()
+			lexer.BracketCount--
 			return lexer.makeToken(TokenTypeRightBracket, "]"), nil
 		case '.':
 			lexer.GoNextChar()
@@ -731,6 +774,16 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 		case '\'':
 			return lexer.ReadRune()
 		}
+	}
+
+	if lexer.ParenCount > 0 {
+		return nil, NewCoralError("Syntax", "Unclosed parentheses '(' !", LexParenthesesUnclosed)
+	}
+	if lexer.BracketCount > 0 {
+		return nil, NewCoralError("Syntax", "Unclosed bracket '[' !", LexBracketUnclosed)
+	}
+	if lexer.ParenCount > 0 {
+		return nil, NewCoralError("Syntax", "Unclosed brace '{' !", LexBraceUnclosed)
 	}
 
 	return nil, nil

@@ -9,4 +9,7 @@ const (
 	LexUnicodeEscapeFormatError
 	LexIdentifierFirstRuneCanNotBeDigit
 	LexBlockCommentTooNested
+	LexParenthesesUnclosed
+	LexBracketUnclosed
+	LexBraceUnclosed
 )

@@ -65,7 +65,7 @@ func TestReadDecimal(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		So(gotToken.Str, ShouldEqual, "386")
+		So(gotToken.Value, ShouldEqual, "386")
 		So(gotToken.Kind, ShouldEqual, TokenTypeDecimalInteger)
 	})
 
@@ -77,7 +77,7 @@ func TestReadDecimal(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		So(gotToken.Str, ShouldEqual, "186")
+		So(gotToken.Value, ShouldEqual, "186")
 		So(gotToken.Kind, ShouldEqual, TokenTypeDecimalInteger)
 	})
 }
@@ -90,7 +90,7 @@ func TestReadFloat(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		} else {
-			So(gotToken.Str, ShouldEqual, "3.5681")
+			So(gotToken.Value, ShouldEqual, "3.5681")
 			So(gotToken.Kind, ShouldEqual, TokenTypeFloat)
 		}
 	})
@@ -103,7 +103,7 @@ func TestReadFloat(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		So(gotToken.Str, ShouldEqual, "0.186")
+		So(gotToken.Value, ShouldEqual, "0.186")
 		So(gotToken.Kind, ShouldEqual, TokenTypeFloat)
 	})
 
@@ -123,7 +123,7 @@ func TestReadExponent(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "1.7e+2")
+		So(gotToken.Value, ShouldEqual, "1.7e+2")
 		So(gotToken.Kind, ShouldEqual, TokenTypeExponent)
 	})
 
@@ -150,7 +150,7 @@ func TestReadHexadecimal(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "0xEf012a")
+		So(gotToken.Value, ShouldEqual, "0xEf012a")
 		So(gotToken.Kind, ShouldEqual, TokenTypeHexadecimalInteger)
 	})
 }
@@ -163,7 +163,7 @@ func TestReadBinary(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "0b101001")
+		So(gotToken.Value, ShouldEqual, "0b101001")
 		So(gotToken.Kind, ShouldEqual, TokenTypeBinaryInteger)
 	})
 }
@@ -176,21 +176,40 @@ func TestReadOctal(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "0o1073")
+		So(gotToken.Value, ShouldEqual, "0o1073")
 		So(gotToken.Kind, ShouldEqual, TokenTypeOctalInteger)
 	})
 }
 func TestReadString(t *testing.T) {
-	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "\"我就是\\t想装个逼：\\u77e5道unicode是这样的\"")
+	testLexer1 := &Lexer{}
+	InitLexerFromString(testLexer1, "\"我就是\\t想装个逼：\\u77e5道unicode是这样的\"")
 
-	Convey("测试读入字符串（支持转义字符）", t, func() {
-		gotToken, err := testLexer.ReadString()
+	Convey("测试读入字符串（支持转义 \\u 字符）", t, func() {
+		gotToken, err := testLexer1.ReadString()
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "我就是\t想装个逼：知道unicode是这样的")
+		So(gotToken.Value, ShouldEqual, "我就是\t想装个逼：知道unicode是这样的")
 		So(gotToken.Kind, ShouldEqual, TokenTypeString)
+	})
+
+	testLexer2 := &Lexer{}
+	InitLexerFromString(testLexer2, "\"来个单的：\\xD688\"")
+
+	Convey("测试读入字符串（支持转义 \\x 字符）", t, func() {
+		gotToken, err := testLexer2.ReadString()
+		if err != nil {
+			CoralErrorHandler(err)
+		}
+		So(gotToken.Value, ShouldEqual, "来个单的：Ö88")
+		So(gotToken.Kind, ShouldEqual, TokenTypeString)
+	})
+
+	failLexer := &Lexer{}
+	InitLexerFromString(failLexer, "\"\\u332\"")
+	Convey("测试读入unicode编码但不足4位报错: error", t, func() {
+		_, err := failLexer.ReadString()
+		So(err.ErrEnum, ShouldEqual, LexUnicodeEscapeFormatError)
 	})
 }
 func TestReadRune(t *testing.T) {
@@ -202,7 +221,7 @@ func TestReadRune(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "铸")
+		So(gotToken.Value, ShouldEqual, "铸")
 		So(gotToken.Kind, ShouldEqual, TokenTypeRune)
 	})
 }
@@ -215,7 +234,7 @@ func TestReadIdentifierAscii(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "num_x")
+		So(gotToken.Value, ShouldEqual, "num_x")
 		So(gotToken.Kind, ShouldEqual, TokenTypeIdentifier)
 	})
 }
@@ -228,7 +247,7 @@ func TestReadIdentifierUTF8(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "大π∆变量1")
+		So(gotToken.Value, ShouldEqual, "大π∆变量1")
 		So(gotToken.Kind, ShouldEqual, TokenTypeIdentifier)
 	})
 }
@@ -241,7 +260,7 @@ func TestReadIdentifierButItIsKeyword(t *testing.T) {
 		if err != nil {
 			CoralErrorHandler(err)
 		}
-		So(gotToken.Str, ShouldEqual, "var")
+		So(gotToken.Value, ShouldEqual, "var")
 		So(gotToken.Kind, ShouldEqual, TokenTypeVar)
 	})
 }
@@ -265,7 +284,7 @@ func TestSkipLineComment(t *testing.T) {
 		CoralErrorHandler(err)
 	}
 	Convey("测试 跳过行注释：", t, func() {
-		So(gotToken.Str, ShouldEqual, "val")
+		So(gotToken.Value, ShouldEqual, "val")
 		So(gotToken.Kind, ShouldEqual, TokenTypeVal)
 	})
 }
@@ -284,8 +303,23 @@ func TestSkipBlockComment(t *testing.T) {
 		CoralErrorHandler(err)
 	}
 	Convey("测试 跳过块注释：", t, func() {
-		So(gotToken.Str, ShouldEqual, "import")
+		So(gotToken.Value, ShouldEqual, "import")
 		So(gotToken.Kind, ShouldEqual, TokenTypeImport)
+	})
+}
+func TestUnclosedException(t *testing.T) {
+	testLexer := &Lexer{}
+	InitLexerFromString(testLexer, `(([{])}`)
+
+	Convey("测试括号未匹配报错：", t, func() {
+		count := 0
+		for _, err := testLexer.GetNextToken(); count < 8; _, err = testLexer.GetNextToken() {
+			if count == 7 {
+				// 此时已经到达 lexer.BytePos 的末尾，但是圆括号仍未关闭完全
+				So(err.ErrEnum, ShouldEqual, LexParenthesesUnclosed)
+			}
+			count++
+		}
 	})
 }
 
@@ -356,7 +390,7 @@ func TestGetNextToken(t *testing.T) {
 			if err != nil {
 				CoralErrorHandler(err)
 			}
-			So(gotToken.Str, ShouldEqual, t.expectedStr)
+			So(gotToken.Value, ShouldEqual, t.expectedStr)
 			So(gotToken.Kind, ShouldEqual, t.expectedKind)
 		}
 	})
