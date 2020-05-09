@@ -1,4 +1,4 @@
-package parser
+package lexer
 
 import (
 	. "coral-lang/src/exception"
@@ -30,9 +30,14 @@ const (
 	TokenTypeWhile
 	TokenTypeFor
 	TokenTypeEach
+	TokenTypeIn
 	TokenTypeFn
 	TokenTypeClass
 	TokenTypeInterface
+	TokenTypeThis
+	TokenTypeSuper
+	TokenTypeStatic
+	TokenTypeInit
 	TokenTypeNew
 	TokenTypeNil
 	TokenTypeTrue
@@ -59,6 +64,8 @@ const (
 	TokenTypeDoubleStar            // **
 	TokenTypeSlash                 // /
 	TokenTypePercent               // %
+	TokenTypeAlpha                 // @
+	TokenTypeWavy                  // ~
 	TokenTypeCaret                 // ^
 	TokenTypeAmpersand             // &
 	TokenTypeBang                  // !
@@ -126,7 +133,7 @@ type Lexer struct {
 func OpenSourceFile(filePath string) []byte {
 	file, err := os.Open(filePath)
 	if err != nil {
-		CoralErrorHandler(NewCoralError("FileSystem", "Can't open source file: "+filePath, FileSystemOpenFileError))
+		CoralErrorHandler(NewCoralError("FileSystem", "Can'Token open source file: "+filePath, FileSystemOpenFileError))
 	}
 	if file != nil {
 		defer file.Close()
@@ -165,9 +172,14 @@ func InitLexerCommonOperations(lexer *Lexer) {
 		"while":     TokenTypeWhile,
 		"for":       TokenTypeFor,
 		"each":      TokenTypeEach,
+		"in":        TokenTypeIn,
 		"fn":        TokenTypeFn,
 		"class":     TokenTypeClass,
 		"interface": TokenTypeInterface,
+		"this":      TokenTypeThis,
+		"super":     TokenTypeSuper,
+		"init":      TokenTypeInit,
+		"static":    TokenTypeStatic,
 		"new":       TokenTypeNew,
 		"nil":       TokenTypeNil,
 		"true":      TokenTypeTrue,
@@ -186,8 +198,8 @@ func InitLexerFromBytes(lexer *Lexer, content []byte) {
 	InitLexerCommonOperations(lexer)
 }
 
-// Token 的 toString() 方法
-func (token *Token) toString() string {
+// GetToken 的 ToString() 方法
+func (token *Token) ToString() string {
 	return fmt.Sprintf("Line %d:%d  Type: %d, Value: %s", token.Line, token.Col, token.Kind, token.Value)
 }
 
@@ -263,7 +275,7 @@ func (uchar *UTF8Char) IsLegalBinary() bool {
 	return uchar.Rune == '0' || uchar.Rune == '1'
 }
 
-// 读出一个十六进制整数的 token
+// 读出一个十六进制整数的 Token
 func (lexer *Lexer) ReadHexadecimal() (*Token, *CoralError) {
 	lexer.GoNextCharByStep(2) // skip '0x'
 	str := "0x"
@@ -275,7 +287,7 @@ func (lexer *Lexer) ReadHexadecimal() (*Token, *CoralError) {
 	return lexer.makeToken(TokenTypeHexadecimalInteger, str), nil
 }
 
-// 读出一个八进制整数的 token
+// 读出一个八进制整数的 Token
 func (lexer *Lexer) ReadOctal() (*Token, *CoralError) {
 	lexer.GoNextCharByStep(2) // 跳过 '0o'
 	str := "0o"
@@ -286,7 +298,7 @@ func (lexer *Lexer) ReadOctal() (*Token, *CoralError) {
 	return lexer.makeToken(TokenTypeOctalInteger, str), nil
 }
 
-// 读出一个二进制整数的 token
+// 读出一个二进制整数的 Token
 func (lexer *Lexer) ReadBinary() (*Token, *CoralError) {
 	lexer.GoNextCharByStep(2) // 跳过 '0o'
 	str := "0b"
@@ -297,7 +309,7 @@ func (lexer *Lexer) ReadBinary() (*Token, *CoralError) {
 	return lexer.makeToken(TokenTypeBinaryInteger, str), nil
 }
 
-// 读出一个十进制整数 或 小数/科学记数法 token
+// 读出一个十进制整数 或 小数/科学记数法 Token
 func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 	var str string
 	hadPoint := false
@@ -394,7 +406,7 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 			case '"':
 				str += "\""
 				lexer.GoNextCharByStep(2)
-			case 'u':
+			case 'u', 'U':
 				// Unicode 需要是：\uXXXX 格式：
 				lexer.GoNextCharByStep(2) // 移过当前的 '\u'
 				unicodeBitCount := 0
@@ -406,7 +418,7 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 				}
 				if unicodeBitCount != 4 {
 					// 说明不满 4 位，解码出错
-					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can't decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
+					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can'Token decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
 				}
 				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 4)
 				str += gotUTF8Decoded
@@ -465,7 +477,7 @@ func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
 			case '"':
 				str += "\""
 				lexer.GoNextCharByStep(2)
-			case 'u':
+			case 'u', 'U':
 				// Unicode 需要是：\uXXXX 格式：
 				lexer.GoNextCharByStep(2) // 移过当前的 '\u'
 				unicodeBitCount := 0
@@ -477,7 +489,7 @@ func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
 				}
 				if unicodeBitCount != 4 {
 					// 说明不满 4 位，解码出错
-					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can't decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
+					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can'Token decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
 				}
 				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 4)
 				str += gotUTF8Decoded
@@ -515,7 +527,7 @@ func (lexer *Lexer) ReadIdentifier() (*Token, *CoralError) {
 	// 读入第一个字符
 	str := string(lexer.PeekChar().Rune)
 	if firstRuneMatcher.MatchString(str) {
-		return nil, NewCoralError("Syntax", "Digit can't be used for the first character of an identifier!", LexIdentifierFirstRuneCanNotBeDigit)
+		return nil, NewCoralError("Syntax", "Digit can'Token be used for the first character of an identifier!", LexIdentifierFirstRuneCanNotBeDigit)
 	}
 	lexer.GoNextChar()
 	for lexer.BytePos < len(lexer.Content) &&
@@ -527,7 +539,7 @@ func (lexer *Lexer) ReadIdentifier() (*Token, *CoralError) {
 
 	if keywordType, isKeyword := lexer.KeywordMap[str]; isKeyword {
 		return lexer.makeToken(keywordType, str), nil
-	} // 如果是关键字 则 返回对应关键字的 token 类型
+	} // 如果是关键字 则 返回对应关键字的 Token 类型
 	return lexer.makeToken(TokenTypeIdentifier, str), nil
 }
 
@@ -571,7 +583,7 @@ func (lexer *Lexer) SkipLineComment() {
 	}
 }
 
-// 产出 token，词法分析器的行号也移动字面值 s 的长度
+// 产出 Token，词法分析器的行号也移动字面值 s 的长度
 func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 	lexer.Col += len(s)
 	// s 这个字符串的长度就是其中 UTF8 字符个数的长度
@@ -583,7 +595,7 @@ func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 	}
 }
 
-// 词法分析器获取下一个 token
+// 词法分析器获取下一个 Token
 func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 	for lexer.BytePos < len(lexer.Content) {
 		c := lexer.PeekChar()
@@ -632,6 +644,12 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 		case '.':
 			lexer.GoNextChar()
 			return lexer.makeToken(TokenTypeDot, "."), nil
+		case '~':
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeWavy, "~"), nil
+		case '@':
+			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeWavy, "@"), nil
 		case '=':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
 				lexer.GoNextCharByStep(2)

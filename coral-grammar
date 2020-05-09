@@ -1,9 +1,9 @@
-sourceCode ::= (statement)*
+root ::= (statement)*
 
 statement
-  ::= importStmt
+  ::= simpleStmt
+    | importStmt
     | enumStmt
-    | simpleStmt ';'
     | blockStmt
     | tryCatchStmt
     | ifStmt
@@ -22,7 +22,7 @@ statement
 */
 moduleName ::= IDENTIFIER ('.' IDENTIFIER)*
 importElement ::= moduleName ('as' IDENTIFIER)? ';'
-importStmt ::= ('from' moduleName)? 'import' '{' importElement? '}'
+importStmt ::= ('from' moduleName)? 'import' (importElement ';' | ('{' importElement{2,} '}'))
 
 /* enumStmt Example:
     enum Sex {
@@ -41,12 +41,11 @@ hexadecimalLit ::= '0x' [0-9a-fA-F]+
 binaryLit ::= '0b' [01]+
 floatLit ::= [0-9]+ '.' [0-9]+
 exponentLit ::= [0-9]+ ('.' [0-9]+)? 'e' ('+' | '-')? [0-9]+
-unicodeDigits ::= '\\' 'u' [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]
+unicodeDigits ::= '\\' ('u'|'U') [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]
 hexBytesDigits ::= '\\' 'x' [0-9a-fA-F] [0-9a-fA-F]
 escapeValue ::= (unicodeDigits | hexBytesDigits | '\\' ['"abfnrtv\\])
 charLit ::= '\'' (~[\n\\] | escapeValue) '\''
 stringLit ::= '"' (~["\\] | escapeValue)*  '"'
-longStringLit ::= '`' (~'`')* '`'
 arrayLit ::= '[' expressionList? ']'
 mapElement ::= expression ':' expression
 mapLit ::= '{' mapElement (',' mapElement)* '}'
@@ -60,7 +59,6 @@ literal
     | exponentLit
     | charLit
     | stringLit
-    | longStringLit
     | arrayLit
     | mapLit
 operandName ::= IDENTIFIER ('.' IDENTIFIER)*
@@ -68,7 +66,7 @@ operand ::= literal | operandName
 index ::= '[' expression ']'
 slice ::= '[' expression? ':' expression? ']'
 call ::= '(' expressionList? ')'
-primaryExpr ::= operand (index | slice | call)
+primaryExpr ::= operand (index | slice | call)?
 newInstanceExpression ::= 'new' typeDescription '(' expressionList ')'
 unaryExpr ::= ('-' | '!' | '~') expression
 expression
@@ -81,25 +79,25 @@ expression
     | expression '&&' expression
     | expression '||' expression
 expressionList ::= (expression (',' expression)*)?
-incDecStmt ::= expression ('++' | '--')
-breakStmt ::= 'break'
-continueStmt ::= 'continue'
-returnStmt ::= 'return' expressionList?
+incDecStmt ::= expression ('++' | '--') ';'
+breakStmt ::= 'break' ';'
+continueStmt ::= 'continue' ';'
+returnStmt ::= 'return' expressionList? ';'
 mixAssignOperator ::= ('+' | '-' | '|' | '^' | '*' | '/' | '%' | '<<' | '>>' | '&') '='
-assignStmt ::= (expressionList '=' expressionList) | (operandName mixAssignOperator expression)
+assignStmt ::= ((expressionList '=' expressionList) | (operandName mixAssignOperator expression)) ';'
 typeName ::= IDENTIFIER ('.' IDENTIFIER)*
 typeLit ::= ('[' typeDescription ']') | (typeName '<' typeName (',' typeName)* '>')
 typeDescription ::= typeName | typeLit
 variableDeclElement ::= IDENTIFIER (typeDescription | (typeDescription? '=' expression))
-variableDeclStmt ::= ('var' | 'val') variableDeclElement (',' variableDeclElement)*
+variableDeclStmt ::= ('var' | 'val') variableDeclElement (',' variableDeclElement)* ';'
 simpleStmt
     ::= expression
     | incDecStmt
+    | variableDeclStmt
     | breakStmt
     | continueStmt
     | returnStmt
     | assignStmt
-    | variableDeclStmt
 
 blockStmt ::= '{' statement* '}'
 

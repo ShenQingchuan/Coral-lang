@@ -2,7 +2,7 @@ package test
 
 import (
 	. "coral-lang/src/exception"
-	. "coral-lang/src/parser"
+	. "coral-lang/src/lexer"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -315,7 +315,7 @@ func TestUnclosedException(t *testing.T) {
 		count := 0
 		for _, err := testLexer.GetNextToken(); count < 8; _, err = testLexer.GetNextToken() {
 			if count == 7 {
-				// 此时已经到达 lexer.BytePos 的末尾，但是圆括号仍未关闭完全
+				// 此时已经到达 BytePos 的末尾，但是圆括号仍未关闭完全
 				So(err.ErrEnum, ShouldEqual, LexParenthesesUnclosed)
 			}
 			count++
@@ -384,7 +384,7 @@ func TestGetNextToken(t *testing.T) {
 		{TokenTypeSemi, ";"},
 	}
 
-	Convey("测试读入 Token 流：", t, func() {
+	Convey("测试读入 GetToken 流：", t, func() {
 		for _, t := range expectedTokens {
 			gotToken, err := testLexer.GetNextToken()
 			if err != nil {
