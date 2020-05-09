@@ -198,7 +198,7 @@ func InitLexerFromBytes(lexer *Lexer, content []byte) {
 	InitLexerCommonOperations(lexer)
 }
 
-// GetToken 的 ToString() 方法
+// Token 的 ToString() 方法
 func (token *Token) ToString() string {
 	return fmt.Sprintf("Line %d:%d  Type: %d, Value: %s", token.Line, token.Col, token.Kind, token.Value)
 }
