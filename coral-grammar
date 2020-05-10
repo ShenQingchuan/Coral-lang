@@ -69,16 +69,19 @@ call ::= '(' expressionList? ')'
 primaryExpr ::= operand (index | slice | call)?
 newInstanceExpression ::= 'new' typeDescription '(' expressionList ')'
 unaryExpr ::= ('-' | '!' | '~') expression
-expression
-    ::= primaryExpr
-    | newInstanceExpression
-    | unaryExpr
-    | expression ('*' | '/' | '%' | '<<' | '>>' | '&') expression
+binaryExpr
+    ::= expression ('*' | '/' | '%' | '<<' | '>>' | '&') expression
     | expression ('+' | '-' | '|' | '^') expression
     | expression ('==' | '!=' | '<' | '<=' | '>' | '>=') expression
     | expression '&&' expression
     | expression '||' expression
+expression
+    ::= primaryExpr
+    | newInstanceExpression
+    | unaryExpr
+    | binaryExpr
 expressionList ::= (expression (',' expression)*)?
+
 incDecStmt ::= expression ('++' | '--') ';'
 breakStmt ::= 'break' ';'
 continueStmt ::= 'continue' ';'

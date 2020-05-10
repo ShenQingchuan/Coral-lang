@@ -109,7 +109,7 @@ type TokenType = int
 type Token struct {
 	Line, Col int
 	Kind      TokenType
-	Value     string
+	Str       string
 }
 
 type UTF8Char struct {
@@ -200,7 +200,7 @@ func InitLexerFromBytes(lexer *Lexer, content []byte) {
 
 // GetToken 的 ToString() 方法
 func (token *Token) ToString() string {
-	return fmt.Sprintf("Line %d:%d  Type: %d, Value: %s", token.Line, token.Col, token.Kind, token.Value)
+	return fmt.Sprintf("Line %d:%d  Type: %d, Str: %s", token.Line, token.Col, token.Kind, token.Str)
 }
 
 // 拾取当前游标所在位置的字符
@@ -588,10 +588,10 @@ func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 	lexer.Col += len(s)
 	// s 这个字符串的长度就是其中 UTF8 字符个数的长度
 	return &Token{
-		Line:  lexer.Line,
-		Col:   lexer.Col,
-		Kind:  t,
-		Value: s,
+		Line: lexer.Line,
+		Col:  lexer.Col,
+		Kind: t,
+		Str:  s,
 	}
 }
 

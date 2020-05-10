@@ -4,6 +4,12 @@ import (
 	. "coral-lang/src/lexer"
 )
 
+// 定义类型标注的种类来区分
+const (
+	TypeDescriptionTypeLit = iota
+	TypeDescriptionTypeName
+)
+
 // Package ast 实现了抽象语法树，勇于表达语法解析结果
 // 上承词法分析，下启语义分析
 
@@ -16,25 +22,19 @@ import (
 */
 
 // Node 为语法树中的所有节点定义了接口
-type INode interface {
+type Node interface {
 	NodeType() string
 }
 
 // Statement 为所有语句节点定义了接口
-type IStatement interface {
-	INode
+type Statement interface {
+	Node
 	StatementNode()
-}
-
-// Expression 为所有表达式节点定义了接口
-type IExpression interface {
-	INode
-	ExpressionNode()
 }
 
 // Program 为语法树根节点，每一个 .coral 源代码文件都被视为一整段程序，以一个语句的切片表达
 type Program struct {
-	Root []IStatement
+	Root []Statement
 }
 
 // 标识符节点
@@ -43,53 +43,5 @@ type Identifier struct {
 }
 
 func (it *Identifier) NodeType() string {
-	return "Identifier: " + it.Name.Value
-}
-
-// 类型的名称节点
-type TypeName struct {
-	Link []*Identifier
-}
-
-func (it *TypeName) NodeType() string {
-	var typeName string
-	for i, id := range it.Link {
-		typeName += id.Name.Value
-		if i != len(it.Link)-1 {
-			typeName += "."
-		}
-	} // 拼接 x.y.z 形状的类型名
-	return "Type_Name: " + typeName
-}
-
-// 类型字面量节点
-type TypeLit interface {
-	// TODO: typeLit ::= ('[' typeDescription ']') | (typeName '<' typeName (',' typeName)* '>')
-}
-
-// 类型标注节点
-type TypeDescription struct {
-	// TODO: typeDescription ::= typeName | typeLit
-}
-
-// 单个变量定义的赋值部分
-type VarDeclElement struct {
-	Variable  *Identifier // 定义的变量标识符
-	InitValue IExpression // 赋予的初始值（是个表达式）
-}
-
-// 变量定义语句
-type VarDeclStatement struct {
-	Mutable      bool             // 用于区分 var 和 val
-	declarations []VarDeclElement // 可能有多个变量定义
-}
-
-func (it *VarDeclStatement) NodeType() string {
-	var declType string
-	if it.Mutable {
-		declType = "kind: var"
-	} else {
-		declType = "kind: val"
-	}
-	return "Variable_Declaration_Statement, " + declType
+	return "Identifier: " + it.Name.Str
 }
