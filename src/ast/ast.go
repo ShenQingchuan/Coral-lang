@@ -26,12 +26,6 @@ type Node interface {
 	NodeType() string
 }
 
-// Statement 为所有语句节点定义了接口
-type Statement interface {
-	Node
-	StatementNode()
-}
-
 // Program 为语法树根节点，每一个 .coral 源代码文件都被视为一整段程序，以一个语句的切片表达
 type Program struct {
 	Root []Statement

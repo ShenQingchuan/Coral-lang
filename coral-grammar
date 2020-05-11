@@ -49,6 +49,7 @@ stringLit ::= '"' (~["\\] | escapeValue)*  '"'
 arrayLit ::= '[' expressionList? ']'
 mapElement ::= expression ':' expression
 mapLit ::= '{' mapElement (',' mapElement)* '}'
+lambdaLit ::= '(' expressionList ')' '->' blockStmt
 literal
     ::= nilLit
     | decimalLit
@@ -61,6 +62,7 @@ literal
     | stringLit
     | arrayLit
     | mapLit
+    | LambdaLit
 operandName ::= IDENTIFIER ('.' IDENTIFIER)*
 operand ::= literal | operandName
 index ::= '[' expression ']'
@@ -132,9 +134,9 @@ ifStmt ::= 'if' expression blockStmt ('elif' expression blockStmt)* ('else' bloc
         }
     }
 */
-valueCase ::= expression blockStmt
+normalCase ::= expressionList
 rangeCase ::= expression '...' expression
-caseBlock ::= (valueCase | rangeCase) blockStmt
+caseBlock ::= (singleCase | rangeCase) blockStmt
 switchStmt ::= 'switch' expression '{' ('default' blockStmt)? caseBlock* '}'
 
 /* whileStmt Example:
@@ -160,7 +162,7 @@ forStmt ::= 'for' expression ';' expression ';' expression blockStmt
         println(i);
     }
 */
-eachStmt ::= 'each' IDENTIFIER 'in' expression blockStmt
+eachStmt ::= 'each' IDENTIFIER (',' IDENTIFIER)? 'in' expression blockStmt
 
 /* functionStmt Example:
     fn fibonacci(n int) {
@@ -177,7 +179,7 @@ argument ::= IDENTIFIER typeDescription
 argumentList ::= argument (',' argument)*
 resultList ::= typeDescription (',' typeDescription)*
 signature ::= '(' argumentList* ')' resultList?
-functionDeclaration ::= 'fn' IDENTIFIER signature blockStmt
+functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
 
 /* classStmt Example:
     class VideoDisk : Disk <- Playable {
@@ -204,7 +206,7 @@ functionDeclaration ::= 'fn' IDENTIFIER signature blockStmt
 */
 scopeKeyword ::= 'public' | 'private' | 'protected'
 classMemberVariable ::= scopeKeyword variableDeclStmt
-classMemberMethod ::= scopeKeyword IDENTIFIER signature blockStmt
+classMemberMethod ::= scopeKeyword functionDeclaration
 genericsArgs ::= '<' IDENTIFIER (',' IDENTIFIER)* '>'
 classDeclaration ::= 'class' IDENTIFIER genericsArgs ':' IDENTIFIER '{' (classMemberVariable | classMemberMethod)* '}'
 
@@ -217,4 +219,4 @@ classDeclaration ::= 'class' IDENTIFIER genericsArgs ':' IDENTIFIER '{' (classMe
         println("hahaha, it's ok");
     }
 */
-tryCatchStmt ::= 'try' blockStmt ('catch' IDENTIFIER IDENTIFIER blockStmt)+ ('finally' blockStmt)?
+tryCatchStmt ::= 'try' blockStmt ('catch' IDENTIFIER blockStmt)+ ('finally' blockStmt)?

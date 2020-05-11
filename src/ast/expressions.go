@@ -38,9 +38,12 @@ const (
 	LiteralTypeString
 	LiteralTypeArray
 	LiteralTypeMap
+	LiteralTypeLambda
 )
 
 // ----- 各种字面量 ------
+
+// nil
 type NilLit struct {
 	Literal
 	Value *Token
@@ -56,6 +59,7 @@ func (it *NilLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 十进制整数
 type DecimalLit struct {
 	Literal
 	Value *Token
@@ -71,6 +75,7 @@ func (it *DecimalLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 十六进制整数
 type HexadecimalLit struct {
 	Literal
 	Value *Token
@@ -86,6 +91,7 @@ func (it *HexadecimalLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 八进制整数
 type OctalLit struct {
 	Literal
 	Value *Token
@@ -101,6 +107,7 @@ func (it *OctalLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 二进制整数
 type BinaryLit struct {
 	Literal
 	Value *Token
@@ -116,6 +123,7 @@ func (it *BinaryLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 浮点数
 type FloatLit struct {
 	Literal
 	Value *Token
@@ -131,6 +139,7 @@ func (it *FloatLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 科学记数法
 type ExponentLit struct {
 	Literal
 	Value *Token
@@ -146,6 +155,7 @@ func (it *ExponentLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 字符
 type CharLit struct {
 	Literal
 	Value *Token
@@ -161,6 +171,7 @@ func (it *CharLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 字符串
 type StringLit struct {
 	Literal
 	Value *Token
@@ -176,6 +187,7 @@ func (it *StringLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 数组
 type ArrayLit struct {
 	Literal
 	ValueList []*Expression
@@ -191,6 +203,7 @@ func (it *ArrayLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
+// 字典元素
 type MapElement struct {
 	Key   *Expression
 	Value *Expression
@@ -200,6 +213,7 @@ func (it *MapElement) NodeType() string {
 	return "Map_Element"
 }
 
+// 字典
 type MapLit struct {
 	Literal
 	KeyValueList []*MapElement
@@ -212,6 +226,23 @@ func (it *MapLit) LiteralType() int {
 	return LiteralTypeMap
 }
 func (it *MapLit) OperandNodeType() int {
+	return OperandTypeLiteral
+}
+
+// 箭头函数
+type LambdaLit struct {
+	Literal
+	Arguments []*Expression
+	Block     *BlockStatement
+}
+
+func (it *LambdaLit) NodeType() string {
+	return "Lambda_Lit"
+}
+func (it *LambdaLit) LiteralType() int {
+	return LiteralTypeLambda
+}
+func (it *LambdaLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
