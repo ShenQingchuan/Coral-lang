@@ -1,5 +1,12 @@
 package ast
 
+// 定义类型标注的种类来区分
+const (
+	TypeDescriptionTypeName = iota
+	TypeDescriptionTypeArrayLit
+	TypeDescriptionTypeGenerics
+)
+
 // 类型标注节点
 type TypeDescription interface {
 	Node
@@ -28,12 +35,6 @@ func (it *TypeName) TypeDescriptionNode() int {
 	return TypeDescriptionTypeName
 }
 
-// 类型字面量节点
-type TypeLit interface {
-	Node
-	TypeLitNode()
-}
-
 // 数组类型标识 eg: [T]
 type ArrayTypeLit struct {
 	ElementType *TypeDescription
@@ -42,9 +43,8 @@ type ArrayTypeLit struct {
 func (it *ArrayTypeLit) NodeType() string {
 	return "Array_Type_Lit"
 }
-func (it *ArrayTypeLit) TypeLitNode() {}
 func (it *ArrayTypeLit) TypeDescriptionNode() int {
-	return TypeDescriptionTypeLit
+	return TypeDescriptionTypeArrayLit
 }
 
 // 带泛型参数的标识 eg: A<B,C>
@@ -56,7 +56,6 @@ type GenericsTypeLit struct {
 func (it *GenericsTypeLit) NodeType() string {
 	return "Generics_Type_Lit"
 }
-func (it *GenericsTypeLit) TypeLitNode() {}
 func (it *GenericsTypeLit) TypeDescriptionNode() int {
-	return TypeDescriptionTypeLit
+	return TypeDescriptionTypeGenerics
 }

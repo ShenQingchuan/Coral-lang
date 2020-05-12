@@ -93,12 +93,11 @@ returnStmt ::= 'return' expressionList? ';'
 mixAssignOperator ::= ('+' | '-' | '|' | '^' | '*' | '/' | '%' | '<<' | '>>' | '&') '='
 assignStmt ::= ((expressionList '=' expressionList) | (operandName mixAssignOperator expression)) ';'
 typeName ::= IDENTIFIER ('.' IDENTIFIER)*
-typeLit ::= ('[' typeDescription ']') | (typeName '<' typeName (',' typeName)* '>')
-typeDescription ::= typeName | typeLit
+typeDescription ::= ('[' typeDescription ']') | (typeName ('<' typeName (',' typeName)* '>')? )
 variableDeclElement ::= IDENTIFIER (typeDescription | (typeDescription? '=' expression))
 variableDeclStmt ::= ('var' | 'val') variableDeclElement (',' variableDeclElement)* ';'
 simpleStmt
-    ::= expression
+    ::= expression ';'
     | incDecStmt
     | variableDeclStmt
     | breakStmt

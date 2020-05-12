@@ -11,9 +11,9 @@ type CoralError struct {
 	ErrEnum int
 }
 
-func NewCoralError(errKind string, msg string, errEnum int) *CoralError {
+func NewCoralError(prefixDescription string, msg string, errEnum int) *CoralError {
 	return &CoralError{
-		errors.New("* " + errKind + " Error: " + msg),
+		errors.New("* " + prefixDescription + " Error: " + msg),
 		errEnum,
 	}
 }

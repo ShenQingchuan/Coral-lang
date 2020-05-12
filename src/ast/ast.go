@@ -4,12 +4,6 @@ import (
 	. "coral-lang/src/lexer"
 )
 
-// 定义类型标注的种类来区分
-const (
-	TypeDescriptionTypeLit = iota
-	TypeDescriptionTypeName
-)
-
 // Package ast 实现了抽象语法树，勇于表达语法解析结果
 // 上承词法分析，下启语义分析
 
