@@ -18,7 +18,7 @@ func NewCoralError(errKind string, msg string, errEnum int) *CoralError {
 	}
 }
 
-func CoralErrorHandler(c *CoralError) {
+func CoralErrorCrashHandler(c *CoralError) {
 	fmt.Println(c.Err)
 	fmt.Printf("* Error code: %d", c.ErrEnum)
 	os.Exit(c.ErrEnum)

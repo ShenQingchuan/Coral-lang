@@ -88,7 +88,7 @@ func TestReadFloat(t *testing.T) {
 	Convey("读入小数: success", t, func() {
 		gotToken, err := successLexer.ReadDecimal(false)
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		} else {
 			So(gotToken.Str, ShouldEqual, "3.5681")
 			So(gotToken.Kind, ShouldEqual, TokenTypeFloat)
@@ -121,7 +121,7 @@ func TestReadExponent(t *testing.T) {
 	Convey("读入科学记数法: success", t, func() {
 		gotToken, err := successLexer.ReadDecimal(false)
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "1.7e+2")
 		So(gotToken.Kind, ShouldEqual, TokenTypeExponent)
@@ -148,7 +148,7 @@ func TestReadHexadecimal(t *testing.T) {
 	Convey("测试读入十六进制整数", t, func() {
 		gotToken, err := testLexer.ReadHexadecimal()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "0xEf012a")
 		So(gotToken.Kind, ShouldEqual, TokenTypeHexadecimalInteger)
@@ -161,7 +161,7 @@ func TestReadBinary(t *testing.T) {
 	Convey("测试读入二进制整数", t, func() {
 		gotToken, err := testLexer.ReadBinary()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "0b101001")
 		So(gotToken.Kind, ShouldEqual, TokenTypeBinaryInteger)
@@ -174,7 +174,7 @@ func TestReadOctal(t *testing.T) {
 	Convey("测试读入八进制整数", t, func() {
 		gotToken, err := testLexer.ReadOctal()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "0o1073")
 		So(gotToken.Kind, ShouldEqual, TokenTypeOctalInteger)
@@ -187,7 +187,7 @@ func TestReadString(t *testing.T) {
 	Convey("测试读入字符串（支持转义 \\u 字符）", t, func() {
 		gotToken, err := testLexer1.ReadString()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "我就是\t想装个逼：知道unicode是这样的")
 		So(gotToken.Kind, ShouldEqual, TokenTypeString)
@@ -199,7 +199,7 @@ func TestReadString(t *testing.T) {
 	Convey("测试读入字符串（支持转义 \\x 字符）", t, func() {
 		gotToken, err := testLexer2.ReadString()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "来个单的：Ö88")
 		So(gotToken.Kind, ShouldEqual, TokenTypeString)
@@ -219,7 +219,7 @@ func TestReadRune(t *testing.T) {
 	Convey("测试读入字符（支持转义字符）", t, func() {
 		gotToken, err := testLexer.ReadRune()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "铸")
 		So(gotToken.Kind, ShouldEqual, TokenTypeRune)
@@ -232,7 +232,7 @@ func TestReadIdentifierAscii(t *testing.T) {
 	Convey("测试读入标识符: ascii", t, func() {
 		gotToken, err := testLexer.ReadIdentifier()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "num_x")
 		So(gotToken.Kind, ShouldEqual, TokenTypeIdentifier)
@@ -245,7 +245,7 @@ func TestReadIdentifierUTF8(t *testing.T) {
 	Convey("测试读入标识符: UTF8", t, func() {
 		gotToken, err := testLexer.ReadIdentifier()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "大π∆变量1")
 		So(gotToken.Kind, ShouldEqual, TokenTypeIdentifier)
@@ -258,7 +258,7 @@ func TestReadIdentifierButItIsKeyword(t *testing.T) {
 	Convey("测试读入关键字：", t, func() {
 		gotToken, err := testLexer.ReadIdentifier()
 		if err != nil {
-			CoralErrorHandler(err)
+			CoralErrorCrashHandler(err)
 		}
 		So(gotToken.Str, ShouldEqual, "var")
 		So(gotToken.Kind, ShouldEqual, TokenTypeVar)
@@ -281,7 +281,7 @@ func TestSkipLineComment(t *testing.T) {
 
 	gotToken, err := testLexer.GetNextToken()
 	if err != nil {
-		CoralErrorHandler(err)
+		CoralErrorCrashHandler(err)
 	}
 	Convey("测试 跳过行注释：", t, func() {
 		So(gotToken.Str, ShouldEqual, "val")
@@ -300,7 +300,7 @@ func TestSkipBlockComment(t *testing.T) {
 
 	gotToken, err := testLexer.GetNextToken()
 	if err != nil {
-		CoralErrorHandler(err)
+		CoralErrorCrashHandler(err)
 	}
 	Convey("测试 跳过块注释：", t, func() {
 		So(gotToken.Str, ShouldEqual, "import")
@@ -360,7 +360,7 @@ func TestGetNextToken(t *testing.T) {
 		{TokenTypeDecimalInteger, "3"},
 		{TokenTypeDoubleLeftAngleEqual, "<<="},
 		{TokenTypeDecimalInteger, "5"},
-		{TokenTypeColon, ","},
+		{TokenTypeComma, ","},
 		{TokenTypeIdentifier, "e"},
 		{TokenTypeEqual, "="},
 		{TokenTypeIdentifier, "esm"},
@@ -388,7 +388,7 @@ func TestGetNextToken(t *testing.T) {
 		for _, t := range expectedTokens {
 			gotToken, err := testLexer.GetNextToken()
 			if err != nil {
-				CoralErrorHandler(err)
+				CoralErrorCrashHandler(err)
 			}
 			So(gotToken.Str, ShouldEqual, t.expectedStr)
 			So(gotToken.Kind, ShouldEqual, t.expectedKind)

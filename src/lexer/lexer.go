@@ -47,7 +47,8 @@ const (
 	TokenTypeFinally
 
 	TokenTypeSemi                  // ;
-	TokenTypeColon                 // ,
+	TokenTypeComma                 // ,
+	TokenTypeColon                 // :
 	TokenTypeLeftParen             // (
 	TokenTypeRightParen            // )
 	TokenTypeLeftBrace             // {
@@ -133,7 +134,7 @@ type Lexer struct {
 func OpenSourceFile(filePath string) []byte {
 	file, err := os.Open(filePath)
 	if err != nil {
-		CoralErrorHandler(NewCoralError("FileSystem", "Can'Token open source file: "+filePath, FileSystemOpenFileError))
+		CoralErrorCrashHandler(NewCoralError("FileSystem", "Can'Token open source file: "+filePath, FileSystemOpenFileError))
 	}
 	if file != nil {
 		defer file.Close()
@@ -196,6 +197,10 @@ func InitLexerFromString(lexer *Lexer, content string) {
 func InitLexerFromBytes(lexer *Lexer, content []byte) {
 	lexer.Content = content
 	InitLexerCommonOperations(lexer)
+}
+
+func (lexer *Lexer) ResetBytePos(i int) {
+	lexer.BytePos = i
 }
 
 // Token 的 ToString() 方法
@@ -616,6 +621,9 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 			return lexer.makeToken(TokenTypeSemi, ";"), nil
 		case ',':
 			lexer.GoNextChar()
+			return lexer.makeToken(TokenTypeComma, ","), nil
+		case ':':
+			lexer.GoNextChar()
 			return lexer.makeToken(TokenTypeColon, ","), nil
 		case '(':
 			lexer.GoNextChar()
@@ -649,7 +657,7 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 			return lexer.makeToken(TokenTypeWavy, "~"), nil
 		case '@':
 			lexer.GoNextChar()
-			return lexer.makeToken(TokenTypeWavy, "@"), nil
+			return lexer.makeToken(TokenTypeAlpha, "@"), nil
 		case '=':
 			if lexer.PeekNextChar(c.ByteLength).MatchRune('=') {
 				lexer.GoNextCharByStep(2)

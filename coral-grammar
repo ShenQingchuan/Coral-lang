@@ -52,6 +52,8 @@ mapLit ::= '{' mapElement (',' mapElement)* '}'
 lambdaLit ::= '(' expressionList ')' '->' blockStmt
 literal
     ::= nilLit
+    | trueLit
+    | falseLit
     | decimalLit
     | octalLit
     | hexadecimalLit

@@ -215,7 +215,7 @@ type AssignStatement interface {
 
 // 简单语句定义
 type SimpleStatement interface {
-	Node
+	Statement
 	SimpleStatementNodeType() int
 }
 
@@ -466,6 +466,9 @@ type FunctionDeclarationStatement struct {
 
 func (it *FunctionDeclarationStatement) NodeType() string {
 	return "Function_Declaration_Statement"
+}
+func (it *FunctionDeclarationStatement) StatementNodeType() int {
+	return StatementTypeFunctionDecl
 }
 
 // 类成员接口
