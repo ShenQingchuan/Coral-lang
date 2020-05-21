@@ -3,6 +3,7 @@
 <div style="width: 100%; display: flex; justify-content: center; align-items: center">
     <img style="margin: 0 auto;" alt="" width="200" src="http://rpzoss.oss-cn-chengdu.aliyuncs.com/tmyBlog/2020-05-21-172105.png" />
 </div>
+
 - 目标追求 Java 般的稳定（但必须承认我们永远无法企及 Java 社区一般的庞大生态，毕竟经年累月）
 - 静态类型，类型标注后置，没有冒号，类似于 Go
 - 希望提供 Python，Go 般的强大基础库
