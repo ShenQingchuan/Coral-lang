@@ -228,8 +228,8 @@ func (it *ArrayLit) OperandNodeType() int {
 
 // 字典元素
 type MapElement struct {
-	Key   *Expression
-	Value *Expression
+	Key   Expression
+	Value Expression
 }
 
 func (it *MapElement) NodeType() string {
@@ -328,7 +328,7 @@ func (it *BasicPrimaryExpression) StatementNodeType() int {
 // 索引访问表达式节点
 type IndexExpression struct {
 	Operand *BasicPrimaryExpression // 继承其操作数，其他三种下同
-	Index   *Expression             // 索引表达式
+	Index   Expression              // 索引表达式
 }
 
 func (it *IndexExpression) ExpressionNodeType() int {
@@ -350,8 +350,8 @@ func (it *IndexExpression) StatementNodeType() int {
 // 切片访问表达式节点
 type SliceExpression struct {
 	Operand *BasicPrimaryExpression
-	Start   *Expression // 切片位置起点
-	End     *Expression // 切片位置终点
+	Start   Expression // 切片位置起点
+	End     Expression // 切片位置终点
 }
 
 func (it *SliceExpression) NodeType() string {
@@ -420,7 +420,7 @@ func (it *NewInstanceExpression) StatementNodeType() int {
 // 一元表达式节点
 type UnaryExpression struct {
 	Operator *Token
-	Operand  *Expression
+	Operand  Expression
 }
 
 func (it *UnaryExpression) ExpressionNodeType() int {
@@ -439,8 +439,8 @@ func (it *UnaryExpression) StatementNodeType() int {
 // 二元表达式节点
 type BinaryExpression struct {
 	Operator *Token
-	left     *Expression
-	right    *Expression
+	Left     Expression
+	Right    Expression
 }
 
 func (it *BinaryExpression) ExpressionNodeType() int {

@@ -8,26 +8,68 @@ import (
 )
 
 type Parser struct {
-	Lexer        *Lexer
-	Program      *Program
+	Lexer   *Lexer
+	Program *Program
+
+	LastToken    *Token
 	CurrentToken *Token
 }
 
-func (parser *Parser) InitParserFromBytes(content []byte) {
+func InitParserFromBytes(parser *Parser, content []byte) {
+	parser.Lexer = new(Lexer)
 	InitLexerFromBytes(parser.Lexer, content)
+	parser.PeekNextToken() // 统一获取到第一个 Token
 }
-func (parser *Parser) InitParserFromString(content string) {
+func InitParserFromString(parser *Parser, content string) {
+	parser.Lexer = new(Lexer)
 	InitLexerFromString(parser.Lexer, content)
+	parser.PeekNextToken() // 统一获取到第一个 Token
 }
 func (parser *Parser) PeekNextToken() {
 	token, err := parser.Lexer.GetNextToken()
 	if err != nil {
 		CoralErrorCrashHandler(err)
 	}
+
+	parser.LastToken = parser.CurrentToken
 	parser.CurrentToken = token
 }
 func (parser *Parser) GetCurrentTokenPos() string {
 	return fmt.Sprintf("line %d:%d: ", parser.CurrentToken.Line, parser.CurrentToken.Col)
+}
+func GetBinaryOperatorPriority(token *Token) int {
+	switch token.Kind {
+	case TokenTypeDoubleStar:
+		return 2
+	case TokenTypeSlash, TokenTypeStar, TokenTypePercent:
+		return 3
+	case TokenTypePlus, TokenTypeMinus:
+		return 4
+	case TokenTypeDoubleLeftAngle, TokenTypeDoubleRightAngle:
+		return 5
+	case TokenTypeRightAngle, TokenTypeLeftAngle, TokenTypeRightAngleEqual, TokenTypeLeftAngleEqual:
+		return 6
+	case TokenTypeDoubleEqual, TokenTypeBangEqual:
+		return 7
+	case TokenTypeAmpersand:
+		return 8
+	case TokenTypeCaret:
+		return 9
+	case TokenTypeVertical:
+		return 10
+	case TokenTypeDoubleAmpersand:
+		return 11
+	case TokenTypeDoubleVertical:
+		return 12
+	case TokenTypeEqual, TokenTypeSlashEqual,
+		TokenTypeStarEqual, TokenTypePercentEqual,
+		TokenTypePlusEqual, TokenTypeMinusEqual,
+		TokenTypeDoubleLeftAngleEqual, TokenTypeDoubleRightAngleEqual,
+		TokenTypeAmpersandEqual, TokenTypeCaretEqual, TokenTypeVerticalEqual:
+		return 14
+	}
+
+	return 99 // 返回一个极大值表示无优先级
 }
 
 // IDENTIFIER ('.' IDENTIFIER)*
@@ -72,8 +114,7 @@ func (parser *Parser) ParseStatement() Statement {
 }
 
 func (parser *Parser) ParseSimpleStatement() SimpleStatement {
-	expression := parser.ParseExpression()
-	if expression != nil {
+	if expression := parser.ParseExpression(); expression != nil {
 		parser.PeekNextToken()
 		if parser.CurrentToken.Kind == TokenTypeSemi {
 			return expression
@@ -83,14 +124,21 @@ func (parser *Parser) ParseSimpleStatement() SimpleStatement {
 		}
 	}
 
-	// TODO: simpleStatement 的其他情况
-
 	return nil
 }
 
 func (parser *Parser) ParseExpression() Expression {
 	if primaryExpr := parser.ParsePrimaryExpression(); primaryExpr != nil {
 		return primaryExpr
+	}
+	if newInstanceExpression := parser.ParseNewInstanceExpression(); newInstanceExpression != nil {
+		return newInstanceExpression
+	}
+	if unaryExpression := parser.ParseUnaryExpression(); unaryExpression != nil {
+		return unaryExpression
+	}
+	if binaryExpression := parser.ParseBinaryExpression(); binaryExpression != nil {
+		return binaryExpression
 	}
 
 	return nil
@@ -195,7 +243,7 @@ func (parser *Parser) ParsePrimaryExpression() PrimaryExpression {
 				CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
 					"expected an expression to be end position for slice!", ParsingUnexpected))
 			}
-			sliceExpr.End = &end
+			sliceExpr.End = end
 			return sliceExpr
 		}
 
@@ -209,7 +257,7 @@ func (parser *Parser) ParsePrimaryExpression() PrimaryExpression {
 		if parser.CurrentToken.Kind == TokenTypeColon {
 			sliceExpr := new(SliceExpression)
 			sliceExpr.Operand = operand
-			sliceExpr.Start = &start
+			sliceExpr.Start = start
 
 			// 解析切片终点表达式
 			parser.PeekNextToken()
@@ -218,14 +266,28 @@ func (parser *Parser) ParsePrimaryExpression() PrimaryExpression {
 				CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
 					"expected an expression to be an end position for slice!", ParsingUnexpected))
 			}
-			sliceExpr.End = &end
+			sliceExpr.End = end
 			return sliceExpr
 		} else if parser.CurrentToken.Kind == TokenTypeRightBracket {
 			// 只有一个表达式就遇到了右括号
 			indexExpr := new(IndexExpression)
 			indexExpr.Operand = operand
-			indexExpr.Index = &start
+			indexExpr.Index = start
 			return indexExpr
+		}
+	} else if parser.CurrentToken.Kind == TokenTypeLeftParen {
+		parser.PeekNextToken() // 移过当前的左括号，到下一个 token
+		callExpression := new(CallExpression)
+		callExpression.Operand = operand
+		for expression := parser.ParseExpression(); expression != nil; expression = parser.ParseExpression() {
+			callExpression.Params = append(callExpression.Params, &expression)
+		}
+		// 结束循环时，检测是否停留于 token ')'
+		if parser.CurrentToken.Kind == TokenTypeRightParen {
+			return callExpression
+		} else {
+			CoralErrorCrashHandler(NewCoralError("Compile Error",
+				"expected a right parenthesis for function calling!", ParsingUnexpected))
 		}
 	}
 
@@ -260,6 +322,10 @@ func (parser *Parser) ParseLiteral() Literal {
 		return &OctalLit{Value: parser.CurrentToken}
 	case TokenTypeBinaryInteger:
 		return &BinaryLit{Value: parser.CurrentToken}
+	case TokenTypeFloat:
+		return &FloatLit{Value: parser.CurrentToken}
+	case TokenTypeExponent:
+		return &ExponentLit{Value: parser.CurrentToken}
 	case TokenTypeNil:
 		return &NilLit{Value: parser.CurrentToken}
 	case TokenTypeTrue:
@@ -281,4 +347,94 @@ func (parser *Parser) ParseOperandName() *OperandName {
 	operandName.NameList = identifierList
 
 	return operandName
+}
+
+// 解析 新建对象实例 表达式
+func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
+	if parser.CurrentToken.Kind != TokenTypeNew {
+		return nil
+	}
+
+	parser.PeekNextToken()
+	typeDescription := parser.ParseTypeDescription()
+	if typeDescription == nil {
+		CoralErrorCrashHandler(NewCoralError("Compile Error",
+			"expected a type description for object instance creating!", ParsingUnexpected))
+	}
+	parser.PeekNextToken()
+	if parser.CurrentToken.Kind == TokenTypeLeftParen {
+		parser.PeekNextToken() // 移过当前的左括号，到下一个 token
+		newInstanceExpression := new(NewInstanceExpression)
+		newInstanceExpression.Class = &typeDescription
+		for expression := parser.ParseExpression(); expression != nil; expression = parser.ParseExpression() {
+			newInstanceExpression.InitParams = append(newInstanceExpression.InitParams, &expression)
+		}
+		// 结束循环时，检测是否停留于 token ')'
+		if parser.CurrentToken.Kind == TokenTypeRightParen {
+			return newInstanceExpression
+		} else {
+			CoralErrorCrashHandler(NewCoralError("Compile Error",
+				"expected a right parenthesis for constructor method's ending!", ParsingUnexpected))
+		}
+	} else {
+		CoralErrorCrashHandler(NewCoralError("Compile Error",
+			"expected a left parenthesis for constructor method's calling!", ParsingUnexpected))
+	}
+
+	return nil
+}
+
+// 解析 单目表达式
+func (parser *Parser) ParseUnaryExpression() *UnaryExpression {
+	switch parser.CurrentToken.Kind {
+	case TokenTypeMinus, TokenTypeBang, TokenTypeWavy:
+		unaryExpression := new(UnaryExpression)
+		unaryExpression.Operator = parser.CurrentToken
+		if operand := parser.ParseExpression(); operand != nil {
+			unaryExpression.Operand = operand
+			return unaryExpression
+		} else {
+			CoralErrorCrashHandler(NewCoralError("Compile Error",
+				"missing operand for unary expression!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseBinaryExpression() Expression {
+	if left := parser.ParseExpression(); left != nil {
+		if priority := GetBinaryOperatorPriority(parser.CurrentToken); priority != 99 {
+			// 证明是 二元运算符
+			binaryExpression := new(BinaryExpression)
+			binaryExpression.Operator = parser.CurrentToken
+			binaryExpression.Left = left
+
+			parser.PeekNextToken() // 移过当前操作符节点
+
+			// 先暂时形成 左结构，然后解析右边节点（即体现：自左向右结合）
+			if r := parser.ParseExpression(); r != nil {
+				right, rightIsBinary := r.(*BinaryExpression)
+				if rightIsBinary { // 右边节点也是二元表达式，需要进行优先级判断、旋转树
+					if GetBinaryOperatorPriority(right.Operator) > priority {
+						// 即 右边节点的 priority 数值大，反而优先级别低，应作父节点
+						binaryExpression.Right = right.Left // 补充原树的右节点
+						right.Left = binaryExpression       // 而原树的成为左节点
+
+						return right
+					}
+				}
+				// 否则就正常补充右节点
+				binaryExpression.Right = right
+				return binaryExpression
+			} else {
+				CoralErrorCrashHandler(NewCoralError("Compile Error",
+					"expected a right node for binary expression!", ParsingUnexpected))
+			}
+		} else {
+			return left // 即一个基本的表达式而已
+		}
+	}
+
+	return nil
 }

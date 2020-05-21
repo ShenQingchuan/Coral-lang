@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+type Any interface{}
+
 // !! 重点学习 有助于理解编码的内涵
 func UnicodeToUTF8(source string, bit int) string {
 	res := []string{""}

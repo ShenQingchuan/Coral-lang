@@ -58,7 +58,7 @@ const (
 // 返回语句节点
 type ReturnStatement struct {
 	Token      *Token
-	Expression *Expression
+	Expression Expression
 }
 
 func (it *ReturnStatement) NodeType() string {
@@ -103,7 +103,7 @@ func (it *ContinueStatement) StatementNodeType() int {
 
 // 自增或自减语句节点
 type IncDecStatement struct {
-	Expression *Expression
+	Expression Expression
 	Operator   *Token
 }
 
@@ -127,7 +127,7 @@ func (it *IncDecStatement) StatementNodeType() int {
 type VarDeclElement struct {
 	Variable  *Identifier // 定义的变量标识符
 	Type      *TypeDescription
-	InitValue *Expression // 赋予的初始值（是个表达式）
+	InitValue Expression // 赋予的初始值（是个表达式）
 }
 
 // 变量定义语句节点
@@ -154,16 +154,16 @@ func (it *VarDeclStatement) StatementNodeType() int {
 
 // 语句语句节点
 type ExpressionStatement struct {
-	Expression *Expression
+	Expression Expression
 }
 
-func (it *ExpressionStatement) NodeType() string {
+func (it ExpressionStatement) NodeType() string {
 	return "Simple_Statement_Expression"
 }
-func (it *ExpressionStatement) SimpleStatementNodeType() int {
+func (it ExpressionStatement) SimpleStatementNodeType() int {
 	return SimpleStmtTypeExpression
 }
-func (it *ExpressionStatement) StatementNodeType() int {
+func (it ExpressionStatement) StatementNodeType() int {
 	return StatementTypeSimple
 }
 
@@ -191,7 +191,7 @@ func (it *ListAssignStatement) StatementNodeType() int {
 type MixAssignStatement struct {
 	Token    *Token // 该混合赋值运算符
 	Variable *OperandName
-	Value    *Expression
+	Value    Expression
 }
 
 func (it *MixAssignStatement) NodeType() string {
@@ -320,7 +320,7 @@ func (it *EnumStatement) StatementNodeType() int {
 
 // 条件语句单元
 type IfElement struct {
-	Condition *Expression
+	Condition Expression
 	Block     *BlockStatement
 }
 
@@ -363,8 +363,8 @@ func (it *SwitchStatementNormalCase) SwitchStatementCaseNodeType() int {
 
 // 分支语句匹配条件范围
 type SwitchStatementRangeCase struct {
-	From  *Expression
-	To    *Expression
+	From  Expression
+	To    Expression
 	Block *BlockStatement
 }
 
@@ -378,7 +378,7 @@ func (it *SwitchStatementRangeCase) SwitchStatementCaseNodeType() int {
 // 条件语句节点
 type SwitchStatement struct {
 	Keyword *Token
-	Entry   *Expression
+	Entry   Expression
 	Default *BlockStatement
 	Cases   []*SwitchStatementCase
 }
@@ -393,7 +393,7 @@ func (it *SwitchStatement) StatementNodeType() int {
 // while 语句
 type WhileStatement struct {
 	Keyword   *Token
-	Condition *Expression
+	Condition Expression
 	Block     *BlockStatement
 }
 
@@ -407,9 +407,9 @@ func (it *WhileStatement) StatementNodeType() int {
 // for 语句
 type ForStatement struct {
 	Keyword   *Token
-	Initial   *Expression
-	Condition *Expression
-	tail      *Expression
+	Initial   Expression
+	Condition Expression
+	tail      Expression
 	Block     *BlockStatement
 }
 
@@ -424,7 +424,7 @@ func (it *ForStatement) StatementNodeType() int {
 type EachStatement struct {
 	Keyword *Token
 	Names   []*Identifier
-	Target  *Expression
+	Target  Expression
 	Block   *BlockStatement
 }
 
