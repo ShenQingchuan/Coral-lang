@@ -56,7 +56,7 @@ func TestBinaryExpression(t *testing.T) {
 		So(parser.CurrentToken.Str, ShouldEqual, "num")
 
 		binaryExpression, isBinary := parser.ParseExpression().(*BinaryExpression)
-		So(isBinary, ShouldEqual, true) // 证明右边也是一颗二元表达式节点
+		So(isBinary, ShouldEqual, true)
 
 		So(binaryExpression.Operator.Kind, ShouldEqual, TokenTypePlus)
 
@@ -70,5 +70,91 @@ func TestBinaryExpression(t *testing.T) {
 		hex := binaryExpression.Right.(*BasicPrimaryExpression).Operand.(*HexadecimalLit)
 		So(hex.Value.Kind, ShouldEqual, TokenTypeHexadecimalInteger)
 		So(hex.Value.Str, ShouldEqual, "0x3f21")
+	})
+}
+func TestIndexSliceCallExpression(t *testing.T) {
+	Convey("测试索引表达式：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "arr[i]")
+		So(parser.CurrentToken.Str, ShouldEqual, "arr")
+
+		indexExpression, isIndex := parser.ParseExpression().(*IndexExpression)
+		So(isIndex, ShouldEqual, true)
+
+		So(indexExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "arr")
+		So(indexExpression.Index.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "i")
+	})
+
+	Convey("测试切片表达式 1：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "arr[:4]")
+		So(parser.CurrentToken.Str, ShouldEqual, "arr")
+
+		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
+		So(isSlice, ShouldEqual, true)
+
+		So(sliceExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "arr")
+		So(sliceExpression.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "4")
+	})
+
+	Convey("测试切片表达式 2：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "arr[kk:5]")
+		So(parser.CurrentToken.Str, ShouldEqual, "arr")
+
+		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
+		So(isSlice, ShouldEqual, true)
+
+		So(sliceExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "arr")
+		So(sliceExpression.Start.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "kk")
+		So(sliceExpression.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "5")
+	})
+
+	Convey("测试函数调用表达式：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "funcA(i, 3.11)")
+		So(parser.CurrentToken.Str, ShouldEqual, "funcA")
+
+		callExpression, isCall := parser.ParseExpression().(*CallExpression)
+		So(isCall, ShouldEqual, true)
+
+		So(callExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "funcA")
+		So(callExpression.Params[0].(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "i")
+		So(callExpression.Params[1].(*BasicPrimaryExpression).Operand.(*FloatLit).Value.Str,
+			ShouldEqual, "3.11")
+	})
+
+	Convey("混合测试", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "makeArr(dd +7, 3.11e2)[mm:6]")
+		So(parser.CurrentToken.Str, ShouldEqual, "makeArr")
+
+		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
+		So(isSlice, ShouldEqual, true)
+
+		callExpression, isIndexOperandCall := sliceExpression.Operand.(*CallExpression)
+		So(isIndexOperandCall, ShouldEqual, true)
+
+		So(callExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "makeArr")
+		So(callExpression.Params[0].(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
+		So(callExpression.Params[0].(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "dd")
+		So(callExpression.Params[0].(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "7")
+
+		So(sliceExpression.Start.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "mm")
+		So(sliceExpression.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "6")
 	})
 }

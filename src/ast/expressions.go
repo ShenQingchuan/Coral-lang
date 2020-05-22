@@ -327,8 +327,8 @@ func (it *BasicPrimaryExpression) StatementNodeType() int {
 
 // 索引访问表达式节点
 type IndexExpression struct {
-	Operand *BasicPrimaryExpression // 继承其操作数，其他三种下同
-	Index   Expression              // 索引表达式
+	Operand Expression // 操作数，其他三种下同
+	Index   Expression // 索引表达式
 }
 
 func (it *IndexExpression) ExpressionNodeType() int {
@@ -349,7 +349,7 @@ func (it *IndexExpression) StatementNodeType() int {
 
 // 切片访问表达式节点
 type SliceExpression struct {
-	Operand *BasicPrimaryExpression
+	Operand Expression
 	Start   Expression // 切片位置起点
 	End     Expression // 切片位置终点
 }
@@ -372,8 +372,8 @@ func (it *SliceExpression) StatementNodeType() int {
 
 // 函数调用表达式节点
 type CallExpression struct {
-	Operand *BasicPrimaryExpression
-	Params  []*Expression // 函数实参列表
+	Operand Expression
+	Params  []Expression // 函数实参列表
 }
 
 func (it *CallExpression) ExpressionNodeType() int {

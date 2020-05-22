@@ -13,7 +13,7 @@ type CoralError struct {
 
 func NewCoralError(prefixDescription string, msg string, errEnum int) *CoralError {
 	return &CoralError{
-		errors.New("* " + prefixDescription + " Error: " + msg),
+		errors.New("\n* " + prefixDescription + " Error: " + msg),
 		errEnum,
 	}
 }

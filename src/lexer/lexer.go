@@ -525,7 +525,7 @@ func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
 func (lexer *Lexer) ReadIdentifier() (*Token, *CoralError) {
 	// 保证第一位不为数字
 	firstRuneMatcher := regexp.MustCompile(`[0-9]`) // 第一个字符一定不会是 switch 条件上的操作符、空白符等
-	restRuneMatcher := regexp.MustCompile(`[ \t\n;,(){}\[\].=!*/%^|&><+\-'"]`)
+	restRuneMatcher := regexp.MustCompile(`[ \t\n;:,(){}\[\].=!*/%^|&><+\-'"]`)
 	if firstRuneMatcher == nil {
 		return nil, NewCoralError("Compiler", "RegexExp creating error!", CompilerRegexExpCreatingFailed)
 	}
@@ -624,7 +624,7 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 			return lexer.makeToken(TokenTypeComma, ","), nil
 		case ':':
 			lexer.GoNextChar()
-			return lexer.makeToken(TokenTypeColon, ","), nil
+			return lexer.makeToken(TokenTypeColon, ":"), nil
 		case '(':
 			lexer.GoNextChar()
 			lexer.ParenCount++
