@@ -25,6 +25,14 @@ func InitParserFromString(parser *Parser, content string) {
 	InitLexerFromString(parser.Lexer, content)
 	parser.PeekNextToken() // 统一获取到第一个 Token
 }
+func (parser *Parser) AssertCurrentIsComma(situation string) {
+	if parser.MatchCurrentTokenType(TokenTypeComma) {
+		parser.PeekNextToken()
+	} else {
+		CoralErrorCrashHandler(NewCoralError("Compile Error",
+			fmt.Sprintf("expected a comma for expression list %s!", situation), ParsingUnexpected))
+	}
+}
 
 func GetBinaryOperatorPriority(token *Token) int {
 	if token == nil {
@@ -183,7 +191,6 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 	if parser.MatchCurrentTokenType(TokenTypeIdentifier) {
 		typeName := parser.ParseTypeName()
 		if typeName != nil {
-			parser.PeekNextToken()
 			// 结束 typeName 解析后如果是一个 '<' 则进入 Generics 解析
 			if parser.MatchCurrentTokenType(TokenTypeLeftAngle) {
 				genericsTypeLit := new(GenericsTypeLit)
@@ -195,12 +202,13 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 					if genericsArg != nil {
 						genericsTypeLit.GenericsArgs = append(genericsTypeLit.GenericsArgs, genericsArg)
 					}
-					if !parser.MatchCurrentTokenType(TokenTypeComma) {
-						CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
-							fmt.Sprintf("expected a comma to seperate generics arguments but got '%s'",
-								parser.CurrentToken.Str), ParsingUnexpected))
-					} else if parser.MatchCurrentTokenType(TokenTypeRightAngle) {
-						return genericsTypeLit // 遇到 '>' 结束泛型参数解析
+					if parser.MatchCurrentTokenType(TokenTypeRightAngle) {
+						parser.PeekNextToken() // 移过 '>'
+						return genericsTypeLit // 结束泛型参数解析
+					} else {
+						parser.AssertCurrentIsComma(fmt.Sprintf(
+							"for seperating generics arguments but got '%s'",
+							parser.CurrentToken.Str))
 					}
 				}
 			} else {
@@ -246,6 +254,12 @@ func (parser *Parser) ParseLiteral() Literal {
 	switch parser.CurrentToken.Kind {
 	default:
 		return nil
+	case TokenTypeString:
+		defer parser.PeekNextToken()
+		return &StringLit{Value: parser.CurrentToken}
+	case TokenTypeRune:
+		defer parser.PeekNextToken()
+		return &RuneLit{Value: parser.CurrentToken}
 	case TokenTypeDecimalInteger:
 		defer parser.PeekNextToken()
 		return &DecimalLit{Value: parser.CurrentToken}
@@ -302,16 +316,21 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 		CoralErrorCrashHandler(NewCoralError("Compile Error",
 			"expected a type description for object instance creating!", ParsingUnexpected))
 	}
-	parser.PeekNextToken()
 	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		parser.PeekNextToken() // 移过当前的左括号，到下一个 token
 		newInstanceExpression := new(NewInstanceExpression)
-		newInstanceExpression.Class = &typeDescription
+		newInstanceExpression.Class = typeDescription
 		for expression := parser.ParseExpression(); expression != nil; expression = parser.ParseExpression() {
-			newInstanceExpression.InitParams = append(newInstanceExpression.InitParams, &expression)
+			newInstanceExpression.InitParams = append(newInstanceExpression.InitParams, expression)
+			if parser.MatchCurrentTokenType(TokenTypeRightParen) {
+				break
+			} else {
+				parser.AssertCurrentIsComma("in new object instance constructor")
+			}
 		}
 		// 结束循环时，检测是否停留于 token ')'
 		if parser.MatchCurrentTokenType(TokenTypeRightParen) {
+			parser.PeekNextToken() // 移过 ')'
 			return newInstanceExpression
 		} else {
 			CoralErrorCrashHandler(NewCoralError("Compile Error",

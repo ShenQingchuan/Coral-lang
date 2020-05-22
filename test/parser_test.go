@@ -158,3 +158,36 @@ func TestIndexSliceCallExpression(t *testing.T) {
 			ShouldEqual, "6")
 	})
 }
+func TestNewInstanceExpression(t *testing.T) {
+	Convey("测试对象实例新建表达式：无泛型参数", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `new Student("Peter", 18)`)
+		So(parser.CurrentToken.Str, ShouldEqual, "new")
+
+		newInstanceExpression, isNewInstance := parser.ParseExpression().(*NewInstanceExpression)
+		So(isNewInstance, ShouldEqual, true)
+		So(newInstanceExpression, ShouldNotEqual, nil)
+		So(newInstanceExpression.Class.(*TypeName).GetFullName(),
+			ShouldEqual, "Student")
+		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str,
+			ShouldEqual, "Peter")
+		So(newInstanceExpression.InitParams[1].(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "18")
+	})
+
+	Convey("测试对象实例新建表达式：含泛型参数", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "new Array<string>(3)")
+		So(parser.CurrentToken.Str, ShouldEqual, "new")
+
+		newInstanceExpression, isNewInstance := parser.ParseExpression().(*NewInstanceExpression)
+		So(isNewInstance, ShouldEqual, true)
+		So(newInstanceExpression, ShouldNotEqual, nil)
+		So(newInstanceExpression.Class.(*GenericsTypeLit).BasicType.GetFullName(),
+			ShouldEqual, "Array")
+		So(newInstanceExpression.Class.(*GenericsTypeLit).GenericsArgs[0].GetFullName(),
+			ShouldEqual, "string")
+		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "3")
+	})
+}

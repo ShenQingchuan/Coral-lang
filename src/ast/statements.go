@@ -221,7 +221,7 @@ type SimpleStatement interface {
 
 // 块语句节点
 type BlockStatement struct {
-	Statements []*Statement
+	Statements []Statement
 }
 
 func (it *BlockStatement) NodeType() string {

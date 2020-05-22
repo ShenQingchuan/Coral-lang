@@ -182,17 +182,17 @@ func (it *ExponentLit) OperandNodeType() int {
 }
 
 // 字符
-type CharLit struct {
+type RuneLit struct {
 	Value *Token
 }
 
-func (it *CharLit) NodeType() string {
+func (it *RuneLit) NodeType() string {
 	return "Char_Lit, value: " + it.Value.Str
 }
-func (it *CharLit) LiteralNodeType() int {
+func (it *RuneLit) LiteralNodeType() int {
 	return LiteralNodeTypeChar
 }
-func (it *CharLit) OperandNodeType() int {
+func (it *RuneLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 
@@ -213,7 +213,7 @@ func (it *StringLit) OperandNodeType() int {
 
 // 数组
 type ArrayLit struct {
-	ValueList []*Expression
+	ValueList []Expression
 }
 
 func (it *ArrayLit) NodeType() string {
@@ -254,7 +254,7 @@ func (it *MapLit) OperandNodeType() int {
 // 箭头函数
 type LambdaLit struct {
 	Literal
-	Arguments []*Expression
+	Arguments []Expression
 	Block     *BlockStatement
 }
 
@@ -400,8 +400,8 @@ type PrimaryExpression interface {
 
 // 新建对象实例表达式节点
 type NewInstanceExpression struct {
-	Class      *TypeDescription
-	InitParams []*Expression
+	Class      TypeDescription
+	InitParams []Expression
 }
 
 func (it *NewInstanceExpression) ExpressionNodeType() int {

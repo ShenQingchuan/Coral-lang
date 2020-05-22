@@ -447,6 +447,7 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 		}
 	}
 
+	lexer.GoNextChar() // 移过尾部的 '"' 双引号
 	return lexer.makeToken(TokenTypeString, str), nil
 }
 
