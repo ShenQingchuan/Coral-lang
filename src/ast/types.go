@@ -21,7 +21,7 @@ type TypeName struct {
 func (it *TypeName) GetFullName() string {
 	var typeName string
 	for i, id := range it.NameList {
-		typeName += id.Name.Str
+		typeName += id.Token.Str
 		if i != len(it.NameList)-1 {
 			typeName += "."
 		}

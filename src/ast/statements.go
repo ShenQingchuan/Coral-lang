@@ -31,16 +31,7 @@ const (
 	SimpleStmtTypeExpression = iota
 	SimpleStmtIncDecStmt
 	SimpleStmtTypeVariableDecl
-	SimpleStmtTypeBreak
-	SimpleStmtTypeContinue
-	SimpleStmtTypeReturn
-	SimpleStmtTypeAssign
-)
-
-// 定义赋值语句的种类来区分
-const (
-	AssignStmtTypeList = iota
-	AssignStmtTypeMix
+	SimpleStmtTypeAssignList
 )
 
 // 定义条件语句匹配项的种类来区分
@@ -58,14 +49,11 @@ const (
 // 返回语句节点
 type ReturnStatement struct {
 	Token      *Token
-	Expression Expression
+	Expression []Expression
 }
 
 func (it *ReturnStatement) NodeType() string {
 	return "Simple_Statement_Return"
-}
-func (it *ReturnStatement) SimpleStatementNodeType() int {
-	return SimpleStmtTypeReturn
 }
 func (it *ReturnStatement) StatementNodeType() int {
 	return StatementTypeSimple
@@ -79,9 +67,6 @@ type BreakStatement struct {
 func (it *BreakStatement) NodeType() string {
 	return "Simple_Statement_Break"
 }
-func (it *BreakStatement) SimpleStatementNodeType() int {
-	return SimpleStmtTypeBreak
-}
 func (it *BreakStatement) StatementNodeType() int {
 	return StatementTypeSimple
 }
@@ -93,9 +78,6 @@ type ContinueStatement struct {
 
 func (it *ContinueStatement) NodeType() string {
 	return "Simple_Statement_Continue"
-}
-func (it *ContinueStatement) SimpleStatementNodeType() int {
-	return SimpleStmtTypeContinue
 }
 func (it *ContinueStatement) StatementNodeType() int {
 	return StatementTypeSimple
@@ -125,15 +107,15 @@ func (it *IncDecStatement) StatementNodeType() int {
 
 // 单个变量定义的赋值部分
 type VarDeclElement struct {
-	Variable  *Identifier // 定义的变量标识符
-	Type      *TypeDescription
+	VarName   *Token // 定义的变量标识符 identifier token
+	Type      TypeDescription
 	InitValue Expression // 赋予的初始值（是个表达式）
 }
 
 // 变量定义语句节点
 type VarDeclStatement struct {
 	Mutable      bool              // 用于区分 var 和 val
-	declarations []*VarDeclElement // 可能有多个变量定义
+	Declarations []*VarDeclElement // 可能有多个变量定义
 }
 
 func (it *VarDeclStatement) NodeType() string {
@@ -168,49 +150,20 @@ func (it ExpressionStatement) StatementNodeType() int {
 }
 
 // 同句多赋值语句定义的
-type ListAssignStatement struct {
+type AssignListStatement struct {
 	Token   *Token // Token: '='
-	Targets []*Expression
-	Values  []*Expression
+	Targets []PrimaryExpression
+	Values  []Expression
 }
 
-func (it *ListAssignStatement) NodeType() string {
-	return "List_Assign_Statement"
+func (it *AssignListStatement) NodeType() string {
+	return "Assign_List_Statement"
 }
-func (it *ListAssignStatement) AssignStatementNodeType() int {
-	return AssignStmtTypeList
+func (it *AssignListStatement) SimpleStatementNodeType() int {
+	return SimpleStmtTypeAssignList
 }
-func (it *ListAssignStatement) SimpleStatementNodeType() int {
-	return SimpleStmtTypeAssign
-}
-func (it *ListAssignStatement) StatementNodeType() int {
+func (it *AssignListStatement) StatementNodeType() int {
 	return StatementTypeSimple
-}
-
-// 混合赋值语句定义的
-type MixAssignStatement struct {
-	Token    *Token // 该混合赋值运算符
-	Variable *OperandName
-	Value    Expression
-}
-
-func (it *MixAssignStatement) NodeType() string {
-	return "Mix_Assign_Statement"
-}
-func (it *MixAssignStatement) AssignStatementNodeType() int {
-	return AssignStmtTypeMix
-}
-func (it *MixAssignStatement) SimpleStatementNodeType() int {
-	return SimpleStmtTypeAssign
-}
-func (it *MixAssignStatement) StatementNodeType() int {
-	return StatementTypeSimple
-}
-
-// 赋值语句定义
-type AssignStatement interface {
-	SimpleStatement
-	AssignStatementNodeType() int
 }
 
 // 简单语句定义
@@ -239,7 +192,7 @@ type ModuleName struct {
 func (it *ModuleName) GetFullModuleName() string {
 	var fullModuleName string
 	for i, id := range it.NameUnits {
-		fullModuleName += id.Name.Str
+		fullModuleName += id.Token.Str
 		if i != len(it.NameUnits)-1 {
 			fullModuleName += "."
 		}
@@ -511,7 +464,7 @@ type GenericArgs struct {
 func (it *GenericArgs) NodeType() string {
 	var args string
 	for i, id := range it.Args {
-		args += id.Name.Str
+		args += id.Token.Str
 		if i != len(it.Args)-1 {
 			args += ","
 		}

@@ -27,9 +27,9 @@ type Program struct {
 
 // 标识符节点
 type Identifier struct {
-	Name *Token
+	Token *Token
 }
 
 func (it *Identifier) NodeType() string {
-	return "Identifier: " + it.Name.Str
+	return "Identifier: " + it.Token.Str
 }

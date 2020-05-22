@@ -2,6 +2,9 @@ root ::= (statement)*
 
 statement
   ::= simpleStmt
+    | breakStmt
+    | continueStmt
+    | returnStmt
     | importStmt
     | enumStmt
     | blockStmt
@@ -70,28 +73,26 @@ operand ::= literal | operandName
 index ::= '[' expression ']'
 slice ::= '[' expression? ':' expression? ']'
 call ::= '(' expressionList? ')'
+member ::= expression '.' IDENTIFIER ('.' IDENTIFIER)*
 primaryExpr ::= operand (index | slice | call)?
 newInstanceExpression ::= 'new' typeDescription '(' expressionList ')'
 unaryExpr ::= ('-' | '!' | '~') expression
-binaryExpr
-    ::= expression ('*' | '/' | '%' | '<<' | '>>' | '&') expression
-    | expression ('+' | '-' | '|' | '^') expression
-    | expression ('==' | '!=' | '<' | '<=' | '>' | '>=') expression
-    | expression '&&' expression
-    | expression '||' expression
+binaryExpr ::= expression <binaryOperator> expression
 expression
-    ::= primaryExpr
+    ::= '(' expression ')'
+    | primaryExpr
     | newInstanceExpression
     | unaryExpr
     | binaryExpr
-expressionList ::= (expression (',' expression)*)?
+expressionList ::= expression (',' expression)*
+primaryExpressionList ::= primaryExpr (',' primaryExpr)
 
 incDecStmt ::= expression ('++' | '--') ';'
 breakStmt ::= 'break' ';'
 continueStmt ::= 'continue' ';'
 returnStmt ::= 'return' expressionList? ';'
 mixAssignOperator ::= ('+' | '-' | '|' | '^' | '*' | '/' | '%' | '<<' | '>>' | '&') '='
-assignStmt ::= ((expressionList '=' expressionList) | (operandName mixAssignOperator expression)) ';'
+assignStmt ::= ((primaryExpressionList '=' expressionList) ';'
 typeName ::= IDENTIFIER ('.' IDENTIFIER)*
 typeDescription ::= ('[' typeDescription ']') | (typeName ('<' typeName (',' typeName)* '>')? )
 variableDeclElement ::= IDENTIFIER (typeDescription | (typeDescription? '=' expression))
@@ -100,9 +101,6 @@ simpleStmt
     ::= expression ';'
     | incDecStmt
     | variableDeclStmt
-    | breakStmt
-    | continueStmt
-    | returnStmt
     | assignStmt
 
 blockStmt ::= '{' statement* '}'

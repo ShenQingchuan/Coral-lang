@@ -39,16 +39,6 @@ func TestParseLiteral(t *testing.T) {
 		So(isExponentLit, ShouldEqual, true)
 	})
 }
-func TestParseOperandName(t *testing.T) {
-	Convey("测试解析操作数名称：", t, func() {
-		parser := new(Parser)
-		InitParserFromString(parser, "httplib.HttpRequest")
-		So(parser.CurrentToken.Str, ShouldEqual, "httplib")
-
-		operandName := parser.ParseOperandName()
-		So(operandName.GetFullName(), ShouldEqual, "httplib.HttpRequest")
-	})
-}
 func TestBinaryExpression(t *testing.T) {
 	Convey("测试二元表达式：", t, func() {
 		parser := new(Parser)
@@ -72,7 +62,7 @@ func TestBinaryExpression(t *testing.T) {
 		So(hex.Value.Str, ShouldEqual, "0x3f21")
 	})
 }
-func TestIndexSliceCallExpression(t *testing.T) {
+func TestIndexSliceCallMemberExpression(t *testing.T) {
 	Convey("测试索引表达式：", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, "arr[i]")
@@ -133,6 +123,20 @@ func TestIndexSliceCallExpression(t *testing.T) {
 			ShouldEqual, "3.11")
 	})
 
+	Convey("测试成员访问表达式：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "request.query.page")
+		So(parser.CurrentToken.Str, ShouldEqual, "request")
+
+		memberExpression, isMemberExpr := parser.ParseExpression().(*MemberExpression)
+		So(isMemberExpr, ShouldEqual, true)
+
+		So(memberExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "request")
+		So(memberExpression.Member.Operand.Token.Str, ShouldEqual, "query")
+		So(memberExpression.Member.MemberNext.Operand.Token.Str, ShouldEqual, "page")
+	})
+
 	Convey("混合测试", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, "makeArr(dd +7, 3.11e2)[mm:6]")
@@ -189,5 +193,26 @@ func TestNewInstanceExpression(t *testing.T) {
 			ShouldEqual, "string")
 		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
 			ShouldEqual, "3")
+	})
+}
+func TestAssignListStatement(t *testing.T) {
+	Convey("测试赋值列表：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `num_a, x[1]= 3, "hello";`)
+		So(parser.CurrentToken.Str, ShouldEqual, "num_a")
+
+		assignListStmt, isAssignList := parser.ParseStatement().(*AssignListStatement)
+		So(isAssignList, ShouldEqual, true)
+
+		So(assignListStmt.Targets[0].(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "num_a")
+		So(assignListStmt.Targets[1].(*IndexExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "x")
+		So(assignListStmt.Targets[1].(*IndexExpression).Index.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "1")
+		So(assignListStmt.Values[0].(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "3")
+		So(assignListStmt.Values[1].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str,
+			ShouldEqual, "hello")
 	})
 }

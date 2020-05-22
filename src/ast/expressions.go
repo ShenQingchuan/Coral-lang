@@ -18,6 +18,7 @@ const (
 	PrimaryExprTypeIndex
 	PrimaryExprTypeSlice
 	PrimaryExprTypeCall
+	PrimaryExprTypeMember
 )
 
 // 定义操作数的类型来区分
@@ -278,21 +279,14 @@ type Literal interface {
 
 // 操作数名节点
 type OperandName struct {
-	NameList []*Identifier
+	Name *Identifier
 }
 
 func (it *OperandName) NodeType() string {
 	return "Operand_Name: " + it.GetFullName()
 }
 func (it *OperandName) GetFullName() string {
-	var typeName string
-	for i, id := range it.NameList {
-		typeName += id.Name.Str
-		if i != len(it.NameList)-1 {
-			typeName += "."
-		}
-	}
-	return typeName
+	return it.Name.Token.Str
 }
 func (it *OperandName) OperandNodeType() int {
 	return OperandTypeName
@@ -389,6 +383,38 @@ func (it *CallExpression) SimpleStatementNodeType() int {
 	return SimpleStmtTypeExpression
 }
 func (it *CallExpression) StatementNodeType() int {
+	return StatementTypeSimple
+}
+
+// 成员链表节点 同时也是 AST 节点
+type MemberLinkNode struct {
+	Operand    *Identifier
+	MemberNext *MemberLinkNode
+}
+
+func (it *MemberLinkNode) NodeType() string {
+	return "Member_Expression_Member_Link_Node"
+}
+
+// 成员表达式节点
+type MemberExpression struct {
+	Operand Expression
+	Member  *MemberLinkNode // 链表
+}
+
+func (it *MemberExpression) ExpressionNodeType() int {
+	return ExpressionTypePrimary
+}
+func (it *MemberExpression) PrimaryExpressionNode() int {
+	return PrimaryExprTypeMember
+}
+func (it *MemberExpression) NodeType() string {
+	return "Member_Expression"
+}
+func (it *MemberExpression) SimpleStatementNodeType() int {
+	return SimpleStmtTypeExpression
+}
+func (it *MemberExpression) StatementNodeType() int {
 	return StatementTypeSimple
 }
 
