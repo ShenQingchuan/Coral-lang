@@ -7,7 +7,7 @@
 - 目标追求 Java 般的稳定（但必须承认我们永远无法企及 Java 社区一般的庞大生态，毕竟经年累月）
 - 静态类型，类型标注后置，没有冒号，类似于 Go
 - 希望提供 Python，Go 般的强大基础库
-- JS 式简单好用的 API，箭头函数式的 Lambda，剪头是单线，省去按 Shift
+- JS 式简单好用的 API，箭头函数式的 Lambda，箭头是单线 → ，省去按 Shift
 - 较为完善的泛型系统
 - 不用 break 每一条 case 的 switch，暂时不考虑提供 fallthrough
 - 复古式 Java 式非完全面向对象，含有值类型与引用类型
