@@ -89,14 +89,14 @@ func (parser *Parser) ParseExpression() Expression {
 		return inParenExpression
 	}
 
+	if unaryExpression := parser.ParseUnaryExpression(); unaryExpression != nil {
+		return parser.TryParseBinaryExpression(unaryExpression)
+	}
 	if primaryExpr := parser.ParsePrimaryExpression(); primaryExpr != nil {
 		return parser.TryParseBinaryExpression(primaryExpr)
 	}
 	if newInstanceExpression := parser.ParseNewInstanceExpression(); newInstanceExpression != nil {
 		return parser.TryParseBinaryExpression(newInstanceExpression)
-	}
-	if unaryExpression := parser.ParseUnaryExpression(); unaryExpression != nil {
-		return parser.TryParseBinaryExpression(unaryExpression)
 	}
 
 	return nil
@@ -143,7 +143,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 
 			if parser.MatchCurrentTokenType(TokenTypeRightBracket) {
 				parser.PeekNextToken() // 移过 ']'
-				return sliceExpr
+				return parser.TryEnhancePrimaryExpression(sliceExpr)
 			} else {
 				CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
 					"expected an close bracket for slice expression!", ParsingUnexpected))
@@ -336,7 +336,9 @@ func (parser *Parser) ParseUnaryExpression() *UnaryExpression {
 	case TokenTypeMinus, TokenTypeBang, TokenTypeWavy:
 		unaryExpression := new(UnaryExpression)
 		unaryExpression.Operator = parser.CurrentToken
-		if operand := parser.ParseExpression(); operand != nil {
+		parser.PeekNextToken() // 移过该单目运算符
+
+		if operand := parser.ParsePrimaryExpression(); operand != nil {
 			unaryExpression.Operand = operand
 			return unaryExpression
 		} else {

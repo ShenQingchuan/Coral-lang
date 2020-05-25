@@ -162,6 +162,35 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 			ShouldEqual, "6")
 	})
 }
+func TestUnaryExpression(t *testing.T) {
+	Convey("测试单目运算符解析：1", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "!m.tt&&~ss.k[1]")
+		So(parser.CurrentToken.Str, ShouldEqual, "!")
+
+		binaryExpression, isBinary := parser.ParseExpression().(*BinaryExpression)
+		So(isBinary, ShouldEqual, true)
+		So(binaryExpression.Operator.Kind, ShouldEqual, TokenTypeDoubleAmpersand)
+
+		leftUnary, isLeftUnary := binaryExpression.Left.(*UnaryExpression)
+		So(isLeftUnary, ShouldEqual, true)
+		So(leftUnary.Operator.Kind, ShouldEqual, TokenTypeBang)
+		So(leftUnary.Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "m")
+		So(leftUnary.Operand.(*MemberExpression).Member.Operand.Token.Str,
+			ShouldEqual, "tt")
+
+		rightUnary, isRightUnary := binaryExpression.Right.(*UnaryExpression)
+		So(isRightUnary, ShouldEqual, true)
+		So(rightUnary.Operator.Kind, ShouldEqual, TokenTypeWavy)
+		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+			ShouldEqual, "ss")
+		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Member.Operand.Token.Str,
+			ShouldEqual, "k")
+		So(rightUnary.Operand.(*IndexExpression).Index.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+			ShouldEqual, "1")
+	})
+}
 func TestNewInstanceExpression(t *testing.T) {
 	Convey("测试对象实例新建表达式：无泛型参数", t, func() {
 		parser := new(Parser)
