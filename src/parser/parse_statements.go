@@ -23,6 +23,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if importStatement := parser.ParseImportStatement(); importStatement != nil {
 		return importStatement
 	}
+	if enumStatement := parser.ParseEnumStatement(); enumStatement != nil {
+		return enumStatement
+	}
 
 	return nil
 }
@@ -297,6 +300,67 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 		} else {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected a module name as source for import statement!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseEnumElement() *EnumElement {
+	if parser.MatchCurrentTokenType(TokenTypeIdentifier) {
+		enumElement := new(EnumElement)
+		enumElement.Name = &Identifier{Token: parser.CurrentToken}
+		parser.PeekNextToken() // 移过当前这个名称标识符
+		// 尝试解析等于号，看是否有赋值
+		if parser.MatchCurrentTokenType(TokenTypeEqual) {
+			parser.PeekNextToken() // 移过 '='
+			if decimalLit, isDecimal := parser.ParseLiteral().(*DecimalLit); isDecimal {
+				enumElement.Value = decimalLit
+				return enumElement
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					"expected a decimal literal as the enum element's value!", ParsingUnexpected))
+			}
+		}
+
+		if !parser.MatchCurrentTokenType(TokenTypeComma) && !parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				"expected a comma to separate multiple enum elements!", ParsingUnexpected))
+		}
+		return enumElement
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseEnumStatement() *EnumStatement {
+	if parser.MatchCurrentTokenType(TokenTypeEnum) {
+		parser.PeekNextToken() // 移过 'enum'
+		if enumName := parser.ParseIdentifier(); enumName != nil {
+			enumStatement := new(EnumStatement)
+			enumStatement.Name = enumName
+
+			if parser.MatchCurrentTokenType(TokenTypeLeftBrace) {
+				parser.PeekNextToken() // 移过 '{'
+
+				for enumElement := parser.ParseEnumElement(); enumElement != nil; enumElement = parser.ParseEnumElement() {
+					enumStatement.Elements = append(enumStatement.Elements, enumElement)
+					if parser.MatchCurrentTokenType(TokenTypeComma) {
+						parser.PeekNextToken() // 移过 ','
+					} else {
+						break
+					}
+				}
+
+				if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+					parser.PeekNextToken() // 移过 '}'
+					return enumStatement
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+						"expected a right brace as ending for enum definition!", ParsingUnexpected))
+				}
+			}
+
 		}
 	}
 

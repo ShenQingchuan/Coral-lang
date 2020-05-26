@@ -276,3 +276,22 @@ func TestImportStatement(t *testing.T) {
 		So(listImportStatement.Elements[1].As.Token.Str, ShouldEqual, "Resp")
 	})
 }
+func TestEnumStatement(t *testing.T) {
+	Convey("测试枚举定义语句解析：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `enum Sex {
+        FEMALE = 0,
+        MALE,
+        SECRET
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "enum")
+
+		enumStatement, isEnum := parser.ParseStatement().(*EnumStatement)
+		So(isEnum, ShouldEqual, true)
+		So(enumStatement.Name.Token.Str, ShouldEqual, "Sex")
+		So(enumStatement.Elements[0].Name.Token.Str, ShouldEqual, "FEMALE")
+		So(enumStatement.Elements[0].Value.Value.Str, ShouldEqual, "0")
+		So(enumStatement.Elements[1].Name.Token.Str, ShouldEqual, "MALE")
+		So(enumStatement.Elements[2].Name.Token.Str, ShouldEqual, "SECRET")
+	})
+}

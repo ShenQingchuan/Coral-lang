@@ -98,7 +98,7 @@ type DecimalLit struct {
 }
 
 func (it *DecimalLit) NodeType() string {
-	return "Decimal_Lit, value: " + it.Value.Str
+	return "Decimal_Lit"
 }
 func (it *DecimalLit) LiteralNodeType() int {
 	return LiteralNodeTypeDecimal
@@ -113,7 +113,7 @@ type HexadecimalLit struct {
 }
 
 func (it *HexadecimalLit) NodeType() string {
-	return "Hexadecimal_Lit, value: " + it.Value.Str
+	return "Hexadecimal_Lit"
 }
 func (it *HexadecimalLit) LiteralNodeType() int {
 	return LiteralNodeTypeHexadecimal
@@ -128,7 +128,7 @@ type OctalLit struct {
 }
 
 func (it *OctalLit) NodeType() string {
-	return "Octal_Lit, value: " + it.Value.Str
+	return "Octal_Lit"
 }
 func (it *OctalLit) LiteralNodeType() int {
 	return LiteralNodeTypeOctal
@@ -143,7 +143,7 @@ type BinaryLit struct {
 }
 
 func (it *BinaryLit) NodeType() string {
-	return "Binary_Lit, value: " + it.Value.Str
+	return "Binary_Lit"
 }
 func (it *BinaryLit) LiteralNodeType() int {
 	return LiteralNodeTypeBinary
@@ -158,7 +158,7 @@ type FloatLit struct {
 }
 
 func (it *FloatLit) NodeType() string {
-	return "Float_Lit, value: " + it.Value.Str
+	return "Float_Lit"
 }
 func (it *FloatLit) LiteralNodeType() int {
 	return LiteralNodeTypeFloat
@@ -173,7 +173,7 @@ type ExponentLit struct {
 }
 
 func (it *ExponentLit) NodeType() string {
-	return "Exponent_Lit, value: " + it.Value.Str
+	return "Exponent_Lit"
 }
 func (it *ExponentLit) LiteralNodeType() int {
 	return LiteralNodeTypeExponent
@@ -188,7 +188,7 @@ type RuneLit struct {
 }
 
 func (it *RuneLit) NodeType() string {
-	return "Char_Lit, value: " + it.Value.Str
+	return "Char_Lit"
 }
 func (it *RuneLit) LiteralNodeType() int {
 	return LiteralNodeTypeChar
@@ -203,7 +203,7 @@ type StringLit struct {
 }
 
 func (it *StringLit) NodeType() string {
-	return "String_Lit, value: " + it.Value.Str
+	return "String_Lit"
 }
 func (it *StringLit) LiteralNodeType() int {
 	return LiteralNodeTypeString
@@ -283,7 +283,7 @@ type OperandName struct {
 }
 
 func (it *OperandName) NodeType() string {
-	return "Operand_Name: " + it.GetFullName()
+	return "Operand_Name"
 }
 func (it *OperandName) GetFullName() string {
 	return it.Name.Token.Str

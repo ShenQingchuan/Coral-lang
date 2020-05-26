@@ -119,13 +119,11 @@ type VarDeclStatement struct {
 }
 
 func (it *VarDeclStatement) NodeType() string {
-	var declType string
 	if it.Mutable {
-		declType = "kind: var"
+		return "Simple_Statement_Variable_Declaration"
 	} else {
-		declType = "kind: val"
+		return "Simple_Statement_Value_Declaration"
 	}
-	return "Simple_Statement_Variable_Declaration, " + declType
 }
 func (it *VarDeclStatement) SimpleStatementNodeType() int {
 	return SimpleStmtTypeVariableDecl
