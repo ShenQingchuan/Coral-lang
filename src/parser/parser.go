@@ -5,6 +5,7 @@ import (
 	. "coral-lang/src/exception"
 	. "coral-lang/src/lexer"
 	"fmt"
+	"os"
 )
 
 type Parser struct {
@@ -13,6 +14,17 @@ type Parser struct {
 
 	LastToken    *Token
 	CurrentToken *Token
+}
+
+func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
+	if parser.CurrentToken != nil {
+		fmt.Printf("\n* line %d:%d ", parser.CurrentToken.Line, parser.CurrentToken.Col)
+	} else if parser.LastToken != nil {
+		fmt.Printf("\n* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)
+	}
+	fmt.Println(c.Err)
+	fmt.Printf("* Error code: %d", c.ErrEnum)
+	os.Exit(c.ErrEnum)
 }
 
 func InitParserFromBytes(parser *Parser, content []byte) {
@@ -29,7 +41,7 @@ func (parser *Parser) AssertCurrentTokenIs(tokenType TokenType, expected string,
 	if parser.MatchCurrentTokenType(tokenType) {
 		parser.PeekNextToken()
 	} else {
-		CoralErrorCrashHandler(NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 			fmt.Sprintf("expected a %s %s!", expected, situation), ParsingUnexpected))
 	}
 }

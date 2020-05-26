@@ -245,3 +245,34 @@ func TestAssignListStatement(t *testing.T) {
 			ShouldEqual, "hello")
 	})
 }
+func TestImportStatement(t *testing.T) {
+	Convey("测试导入模块语句：1", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `from SeaCoral import Request as Req;`)
+		So(parser.CurrentToken.Str, ShouldEqual, "from")
+
+		stmt := parser.ParseStatement()
+		singleImportStatement, isSingleImport := stmt.(*SingleImportStatement)
+		So(isSingleImport, ShouldEqual, true)
+		So(singleImportStatement.From.GetFullModuleName(), ShouldEqual, "SeaCoral")
+		So(singleImportStatement.Element.ModuleName.GetFullModuleName(), ShouldEqual, "Request")
+		So(singleImportStatement.Element.As.Token.Str, ShouldEqual, "Req")
+	})
+
+	Convey("测试导入模块语句：2", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `from SeaCoral import {
+      Request as Req,
+			Response as Resp
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "from")
+
+		listImportStatement, isListImport := parser.ParseStatement().(*ListImportStatement)
+		So(isListImport, ShouldEqual, true)
+		So(listImportStatement.From.GetFullModuleName(), ShouldEqual, "SeaCoral")
+		So(listImportStatement.Elements[0].ModuleName.GetFullModuleName(), ShouldEqual, "Request")
+		So(listImportStatement.Elements[0].As.Token.Str, ShouldEqual, "Req")
+		So(listImportStatement.Elements[1].ModuleName.GetFullModuleName(), ShouldEqual, "Response")
+		So(listImportStatement.Elements[1].As.Token.Str, ShouldEqual, "Resp")
+	})
+}

@@ -189,7 +189,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 	} else if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		// try: call
 		if isSlice {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"slice expression can't be called/executed as a function!", ParsingUnexpected))
 		}
 		parser.PeekNextToken() // 移过当前的左括号，到下一个 token
@@ -209,7 +209,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 			parser.PeekNextToken()
 			return parser.TryEnhancePrimaryExpression(callExpression)
 		} else {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected a right parenthesis for function calling!", ParsingUnexpected))
 		}
 	} else if parser.MatchCurrentTokenType(TokenTypeDot) {
@@ -227,7 +227,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 
 			return parser.TryEnhancePrimaryExpression(memberExpression)
 		} else {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected a member identifier list after dot!", ParsingUnexpected))
 		}
 	}
@@ -299,7 +299,7 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 	parser.PeekNextToken()
 	typeDescription := parser.ParseTypeDescription()
 	if typeDescription == nil {
-		CoralErrorCrashHandler(NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 			"expected a type description for object instance creating!", ParsingUnexpected))
 	}
 	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
@@ -319,11 +319,11 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 			parser.PeekNextToken() // 移过 ')'
 			return newInstanceExpression
 		} else {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected a right parenthesis for constructor method's ending!", ParsingUnexpected))
 		}
 	} else {
-		CoralErrorCrashHandler(NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 			"expected a left parenthesis for constructor method's calling!", ParsingUnexpected))
 	}
 
@@ -342,7 +342,7 @@ func (parser *Parser) ParseUnaryExpression() *UnaryExpression {
 			unaryExpression.Operand = operand
 			return unaryExpression
 		} else {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"missing operand for unary expression!", ParsingUnexpected))
 		}
 	}
@@ -375,7 +375,7 @@ func (parser *Parser) TryParseBinaryExpression(left Expression) Expression {
 			binaryExpression.Right = r
 			return binaryExpression
 		} else {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected a right node for binary expression!", ParsingUnexpected))
 		}
 	}

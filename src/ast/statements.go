@@ -228,8 +228,8 @@ func (it *SingleImportStatement) StatementNodeType() int {
 
 // 集合引入语句
 type ListImportStatement struct {
-	From    *ModuleName
-	Element *ImportElement
+	From     *ModuleName
+	Elements []*ImportElement
 }
 
 func (it *ListImportStatement) NodeType() string {
@@ -245,6 +245,7 @@ func (it *ListImportStatement) StatementNodeType() int {
 // 引入外部模块语句定义
 type ImportStatement interface {
 	Node
+	StatementNodeType() int
 	ImportStatementNodeType() int
 }
 

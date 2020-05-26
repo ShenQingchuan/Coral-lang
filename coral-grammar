@@ -25,7 +25,7 @@ statement
 */
 moduleName ::= IDENTIFIER ('.' IDENTIFIER)*
 importElement ::= moduleName ('as' IDENTIFIER)? ';'
-importStmt ::= ('from' moduleName)? 'import' (importElement ';' | ('{' importElement{2,} '}'))
+importStmt ::= 'from' moduleName 'import' (importElement ';' | ('{' importElement (',' importElement) '}'))
 
 /* enumStmt Example:
     enum Sex {

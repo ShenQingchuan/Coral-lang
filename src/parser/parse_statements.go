@@ -20,6 +20,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if returnStatement := parser.ParseReturnStatement(); returnStatement != nil {
 		return returnStatement
 	}
+	if importStatement := parser.ParseImportStatement(); importStatement != nil {
+		return importStatement
+	}
 
 	return nil
 }
@@ -73,7 +76,7 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 					// 一个变量定义元素完成，此时 token 应为 ',' 会在外部循环断言
 					return varDeclElement
 				} else {
-					CoralErrorCrashHandler(NewCoralError("Compile Error",
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 						fmt.Sprintf("expected an expression as initial value for variable '%s'", varNameToken.Str),
 						ParsingUnexpected))
 				}
@@ -82,7 +85,7 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 				// 那么一个变量定义元素可以结束了，不移过逗号 ',' 而等待外部断言
 				return varDeclElement
 			} else {
-				CoralErrorCrashHandler(NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 					fmt.Sprintf("unexpected token: '%s', incomplete variable declaration!", parser.CurrentToken.Str),
 					ParsingUnexpected))
 			}
@@ -94,14 +97,14 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 					varDeclElement.InitValue = initValue
 					return varDeclElement
 				} else {
-					CoralErrorCrashHandler(NewCoralError("Compile Error",
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 						fmt.Sprintf("expected an expression as initial value to type inferring"+
 							"for the non-typed variable '%s'!", varNameToken.Str),
 						ParsingUnexpected))
 				}
 			} else {
 				// 当前是其他不正确的 token
-				CoralErrorCrashHandler(NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 					fmt.Sprintf("unexpected token '%s' for variabel declaration!", parser.CurrentToken.Str),
 					ParsingUnexpected))
 			}
@@ -171,7 +174,7 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 				Expression: expressionList,
 			}
 		} else {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected an expression for return statement!", ParsingUnexpected))
 		}
 	}
@@ -185,7 +188,7 @@ func (parser *Parser) ParseAssignListStatement() *AssignListStatement {
 		assignListStatement.Targets = primaryExprList
 
 		if !parser.MatchCurrentTokenType(TokenTypeEqual) {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected a equal mark for assignment list!", ParsingUnexpected))
 		}
 		assignListStatement.Token = parser.CurrentToken
@@ -197,8 +200,103 @@ func (parser *Parser) ParseAssignListStatement() *AssignListStatement {
 				"to terminate a assignment list!")
 			return assignListStatement
 		} else {
-			CoralErrorCrashHandler(NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
 				"expected a list of expression as values for assignment list!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseImportElement() *ImportElement {
+	if nameUnits := parser.ParseIdentifierList(); nameUnits != nil {
+		moduleName := &ModuleName{NameUnits: nameUnits}
+		importElement := &ImportElement{
+			ModuleName: moduleName,
+			As:         nil,
+		}
+		if parser.MatchCurrentTokenType(TokenTypeAs) {
+			parser.PeekNextToken() // 移过 'as'
+			if asName := parser.ParseIdentifier(); asName != nil {
+				importElement.As = asName
+				return importElement
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					"expected an identifier as target's another name for import statement!", ParsingUnexpected))
+			}
+		}
+
+		return importElement
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseImportElementList() []*ImportElement {
+	var elementList []*ImportElement
+	for element := parser.ParseImportElement(); element != nil; element = parser.ParseImportElement() {
+		elementList = append(elementList, element)
+		if parser.MatchCurrentTokenType(TokenTypeComma) {
+			parser.PeekNextToken() // 移过 ','
+		} else {
+			break
+		}
+	}
+
+	if len(elementList) < 2 {
+		return nil
+	}
+	return elementList
+}
+
+func (parser *Parser) ParseImportStatement() ImportStatement {
+	if parser.MatchCurrentTokenType(TokenTypeFrom) {
+		parser.PeekNextToken() // 移过 'from'
+		if nameUnits := parser.ParseIdentifierList(); nameUnits != nil && len(nameUnits) > 0 {
+			from := &ModuleName{NameUnits: nameUnits}
+
+			if parser.MatchCurrentTokenType(TokenTypeImport) {
+				parser.PeekNextToken() // 移过 'import'
+				// 进入分支判断：
+				if parser.MatchCurrentTokenType(TokenTypeLeftBrace) {
+					// 当前的如果是大括号说明是 群组引入
+					parser.PeekNextToken() // 移过 '{'
+					if elementList := parser.ParseImportElementList(); elementList != nil {
+						listImportStatement := &ListImportStatement{
+							From:     from,
+							Elements: elementList,
+						}
+
+						if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+							parser.PeekNextToken() // 移过 '}'
+							return listImportStatement
+						} else {
+							CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+								"expected a right brace as ending for a block import statement!", ParsingUnexpected))
+						}
+					} else {
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+							"expected at least two import element for a block import statement!", ParsingUnexpected))
+					}
+				} else if importElement := parser.ParseImportElement(); importElement != nil {
+					singleImportStatement := new(SingleImportStatement)
+					singleImportStatement.From = from
+					singleImportStatement.Element = importElement
+					if parser.MatchCurrentTokenType(TokenTypeSemi) {
+						parser.PeekNextToken() // 移过 ';'
+						return singleImportStatement
+					} else {
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+							"expected a semicolon as ending for import statement!", ParsingUnexpected))
+					}
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+						"expected a module name as target for import statement!", ParsingUnexpected))
+				}
+			}
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				"expected a module name as source for import statement!", ParsingUnexpected))
 		}
 	}
 
