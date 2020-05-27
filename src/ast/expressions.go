@@ -188,7 +188,7 @@ type RuneLit struct {
 }
 
 func (it *RuneLit) NodeType() string {
-	return "Char_Lit"
+	return "Rune_Lit"
 }
 func (it *RuneLit) LiteralNodeType() int {
 	return LiteralNodeTypeChar

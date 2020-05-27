@@ -26,18 +26,52 @@ func (parser *Parser) ParseStatement() Statement {
 	if enumStatement := parser.ParseEnumStatement(); enumStatement != nil {
 		return enumStatement
 	}
+	if blockStatement := parser.ParseBlockStatement(); blockStatement != nil {
+		return blockStatement
+	}
+	if ifStatement := parser.ParseIfStatement(); ifStatement != nil {
+		return ifStatement
+	}
 
 	return nil
 }
 
 func (parser *Parser) ParseSimpleStatement() SimpleStatement {
-	if assignListStatement := parser.ParseAssignListStatement(); assignListStatement != nil {
-		return assignListStatement
-	}
 	if expression := parser.ParseExpression(); expression != nil {
-		parser.PeekNextToken()
 		if parser.MatchCurrentTokenType(TokenTypeSemi) {
-			return expression
+			parser.PeekNextToken() // 移过分号 ';'
+			return &ExpressionStatement{Expression: expression}
+		} else if expression, isPrimary := expression.(PrimaryExpression); isPrimary && parser.MatchCurrentTokenType(TokenTypeComma) {
+			parser.PeekNextToken() // 移过 ','
+			primaryExprList := []PrimaryExpression{expression}
+			for primaryExpr := parser.ParsePrimaryExpression(); primaryExpr != nil; primaryExpr = parser.ParsePrimaryExpression() {
+				primaryExprList = append(primaryExprList, primaryExpr)
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextToken() // 移过 ',' 逗号, continue
+				} else {
+					break // primaryExpressionList 收集完毕
+				}
+			}
+			assignListStatement := new(AssignListStatement)
+			assignListStatement.Targets = primaryExprList
+
+			if !parser.MatchCurrentTokenType(TokenTypeEqual) {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					"expected a equal mark for assignment list!", ParsingUnexpected))
+			}
+			assignListStatement.Token = parser.CurrentToken
+			parser.PeekNextToken() // 移过 '='
+
+			if valueList := parser.ParseExpressionList(); valueList != nil {
+				assignListStatement.Values = valueList
+				parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon",
+					"to terminate a assignment list!")
+				return assignListStatement
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					"expected a list of expression as values for assignment list!", ParsingUnexpected))
+			}
+
 		} else if parser.MatchCurrentTokenType(TokenTypeDoublePlus) || parser.MatchCurrentTokenType(TokenTypeDoubleMinus) {
 			incDecStatement := new(IncDecStatement)
 			incDecStatement.Expression = expression
@@ -365,4 +399,97 @@ func (parser *Parser) ParseEnumStatement() *EnumStatement {
 	}
 
 	return nil
+}
+
+func (parser *Parser) ParseBlockStatement() *BlockStatement {
+	if parser.MatchCurrentTokenType(TokenTypeLeftBrace) {
+		parser.PeekNextToken() // 移过 '{'
+
+		blockStatement := new(BlockStatement)
+		for stmt := parser.ParseStatement(); stmt != nil; stmt = parser.ParseStatement() {
+			blockStatement.Statements = append(blockStatement.Statements, stmt)
+			if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+				parser.PeekNextToken()
+				return blockStatement
+			}
+		}
+
+		// 能结束循环到此处说明有问题、没有正常解析到右括号
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			"expected a right brace as ending for block statement!", ParsingUnexpected))
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseIfElement() *IfElement {
+	if condition := parser.ParseExpression(); condition != nil {
+		ifElement := new(IfElement)
+		ifElement.Condition = condition
+
+		if block := parser.ParseBlockStatement(); block != nil {
+			ifElement.Block = block
+			return ifElement
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				`expected a block as a "if" block for "if" statement!`, ParsingUnexpected))
+		}
+	} else {
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			`expected an expression as a condition for "if" statement!`, ParsingUnexpected))
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseIfStatement() *IfStatement {
+	if parser.MatchCurrentTokenType(TokenTypeIf) {
+		parser.PeekNextToken() // 移过 'if'
+		ifStatement := new(IfStatement)
+		if ifElement := parser.ParseIfElement(); ifElement != nil {
+			ifStatement.If = ifElement
+
+			// 解析可能存在的 一些 elif
+			if elifElements := parser.ParseElifStatements(); elifElements != nil {
+				ifStatement.Elif = elifElements
+			}
+
+			// 解析可能存在的 else
+			if parser.MatchCurrentTokenType(TokenTypeElse) {
+				parser.PeekNextToken() // 移过 'else'
+				if elseBlock := parser.ParseBlockStatement(); elseBlock != nil {
+					ifStatement.Else = elseBlock
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+						`expected a block statement for "else" statement!`, ParsingUnexpected))
+				}
+			}
+
+			return ifStatement
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseElifStatements() []*IfElement {
+	var elifElements []*IfElement
+	for {
+		if parser.MatchCurrentTokenType(TokenTypeElif) {
+			parser.PeekNextToken() // 移过 'elif'
+			if elifElement := parser.ParseIfElement(); elifElement != nil {
+				elifElements = append(elifElements, elifElement)
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					`expected an condition and block statement for "elif" statement!`, ParsingUnexpected))
+			}
+		} else {
+			break
+		}
+	}
+
+	if len(elifElements) == 0 {
+		return nil
+	}
+	return elifElements
 }

@@ -213,10 +213,20 @@ func TestReadString(t *testing.T) {
 	})
 }
 func TestReadRune(t *testing.T) {
-	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "'\\u94F8'")
+	Convey("测试读入字符 1", t, func() {
+		testLexer := &Lexer{}
+		InitLexerFromString(testLexer, "'Z'")
+		gotToken, err := testLexer.ReadRune()
+		if err != nil {
+			CoralErrorCrashHandler(err)
+		}
+		So(gotToken.Str, ShouldEqual, "Z")
+		So(gotToken.Kind, ShouldEqual, TokenTypeRune)
+	})
 
-	Convey("测试读入字符（支持转义字符）", t, func() {
+	Convey("测试读入字符 2：支持转义字符", t, func() {
+		testLexer := &Lexer{}
+		InitLexerFromString(testLexer, "'\\u94F8'")
 		gotToken, err := testLexer.ReadRune()
 		if err != nil {
 			CoralErrorCrashHandler(err)

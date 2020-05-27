@@ -295,3 +295,80 @@ func TestEnumStatement(t *testing.T) {
 		So(enumStatement.Elements[2].Name.Token.Str, ShouldEqual, "SECRET")
 	})
 }
+func TestIfStatement(t *testing.T) {
+	Convey("测试条件表达式解析：1", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `if !screen.closed {
+			println("屏幕还没关！");
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "if")
+
+		ifStatement, isIfStmt := parser.ParseStatement().(*IfStatement)
+		So(isIfStmt, ShouldEqual, true)
+
+		So(ifStatement.If.Condition.(*UnaryExpression).Operator.Kind, ShouldEqual, TokenTypeBang)
+		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"screen")
+		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+			"closed")
+		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext.Operand, ShouldEqual,
+			nil)
+		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext.MemberNext, ShouldEqual,
+			nil)
+		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"println")
+		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+			"屏幕还没关！")
+	})
+
+	Convey("测试条件表达式解析：2", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `if t.getYear() == 2020 {
+			wawa++;
+    } elif m.what > 3.55 {
+			x, y = 1.3e6, 'Z';
+    } else {
+			bb = 6 + 3 * dd;
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "if")
+
+		ifStatement, isIfStmt := parser.ParseStatement().(*IfStatement)
+		So(isIfStmt, ShouldEqual, true)
+
+		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"t")
+		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+			"getYear")
+		So(len(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Params), ShouldEqual,
+			0)
+		So(ifStatement.If.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeDoubleEqual)
+		So(ifStatement.If.Block.Statements[0].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
+		So(ifStatement.If.Block.Statements[0].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"wawa")
+		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeRightAngle)
+		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"m")
+		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+			"what")
+		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*FloatLit).Value.Str, ShouldEqual,
+			"3.55")
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Targets[0].(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"x")
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Targets[1].(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"y")
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Values[0].(*BasicPrimaryExpression).Operand.(*ExponentLit).Value.Str, ShouldEqual,
+			"1.3e6")
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Values[1].(*BasicPrimaryExpression).Operand.(*RuneLit).Value.Str, ShouldEqual,
+			"Z")
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeEqual)
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"bb")
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual,
+			TokenTypeStar)
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"3")
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"dd")
+	})
+}

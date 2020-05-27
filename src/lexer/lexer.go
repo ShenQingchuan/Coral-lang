@@ -520,6 +520,7 @@ func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
 		}
 	}
 
+	lexer.GoNextChar() // 移过末尾的单引号
 	return lexer.makeToken(TokenTypeRune, str), nil
 }
 
