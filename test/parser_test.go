@@ -180,6 +180,46 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 			ShouldEqual, "6")
 	})
 }
+func TestVarValDeclarationStatement(t *testing.T) {
+	Convey("测试变量定义：1", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "var a int = 6;")
+		So(parser.CurrentToken.Str, ShouldEqual, "var")
+
+		varDeclStatement, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
+		So(isVarDecl, ShouldEqual, true)
+
+		So(varDeclStatement.Mutable, ShouldEqual, true)
+		So(varDeclStatement.Declarations[0].VarName.Str, ShouldEqual,
+			"a")
+		So(varDeclStatement.Declarations[0].Type.(*TypeName).GetFullName(), ShouldEqual,
+			"int")
+		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"6")
+	})
+
+	Convey("测试变量定义：2", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "val 圆周率 = 3.14, 光速 = 3e8;")
+		So(parser.CurrentToken.Str, ShouldEqual, "val")
+
+		varDeclStatement, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
+		So(isVarDecl, ShouldEqual, true)
+
+		So(varDeclStatement.Mutable, ShouldEqual, false)
+		So(varDeclStatement.Declarations[0].VarName.Str, ShouldEqual,
+			"圆周率")
+		So(varDeclStatement.Declarations[0].Type, ShouldEqual, nil)
+		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).Operand.(*FloatLit).Value.Str, ShouldEqual,
+			"3.14")
+
+		So(varDeclStatement.Declarations[1].VarName.Str, ShouldEqual,
+			"光速")
+		So(varDeclStatement.Declarations[1].Type, ShouldEqual, nil)
+		So(varDeclStatement.Declarations[1].InitValue.(*BasicPrimaryExpression).Operand.(*ExponentLit).Value.Str, ShouldEqual,
+			"3e8")
+	})
+}
 func TestUnaryExpression(t *testing.T) {
 	Convey("测试单目运算符解析：1", t, func() {
 		parser := new(Parser)
