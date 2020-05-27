@@ -41,7 +41,7 @@ func (parser *Parser) AssertCurrentTokenIs(tokenType TokenType, expected string,
 	if parser.MatchCurrentTokenType(tokenType) {
 		parser.PeekNextToken()
 	} else {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 			fmt.Sprintf("expected a %s %s!", expected, situation), ParsingUnexpected))
 	}
 }

@@ -189,7 +189,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 	} else if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		// try: call
 		if isSlice {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"slice expression can't be called/executed as a function!", ParsingUnexpected))
 		}
 		parser.PeekNextToken() // 移过当前的左括号，到下一个 token
@@ -209,7 +209,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 			parser.PeekNextToken()
 			return parser.TryEnhancePrimaryExpression(callExpression)
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a right parenthesis for function calling!", ParsingUnexpected))
 		}
 	} else if parser.MatchCurrentTokenType(TokenTypeDot) {
@@ -227,7 +227,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 
 			return parser.TryEnhancePrimaryExpression(memberExpression)
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a member identifier list after dot!", ParsingUnexpected))
 		}
 	}
@@ -299,7 +299,7 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 	parser.PeekNextToken()
 	typeDescription := parser.ParseTypeDescription()
 	if typeDescription == nil {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 			"expected a type description for object instance creating!", ParsingUnexpected))
 	}
 	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
@@ -319,11 +319,11 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 			parser.PeekNextToken() // 移过 ')'
 			return newInstanceExpression
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a right parenthesis for constructor method's ending!", ParsingUnexpected))
 		}
 	} else {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 			"expected a left parenthesis for constructor method's calling!", ParsingUnexpected))
 	}
 
@@ -342,7 +342,7 @@ func (parser *Parser) ParseUnaryExpression() *UnaryExpression {
 			unaryExpression.Operand = operand
 			return unaryExpression
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"missing operand for unary expression!", ParsingUnexpected))
 		}
 	}
@@ -352,7 +352,20 @@ func (parser *Parser) ParseUnaryExpression() *UnaryExpression {
 
 // 递归尝试解析 二元表达式
 func (parser *Parser) TryParseBinaryExpression(left Expression) Expression {
-	if priority := GetBinaryOperatorPriority(parser.CurrentToken); priority != 99 {
+	if leftPrimary, isPrimary := left.(PrimaryExpression); // 针对 区间表达式 的特判
+	isPrimary && (parser.MatchCurrentTokenType(TokenTypeEllipsis) || parser.MatchCurrentTokenType(TokenTypeDoubleDot)) {
+		rangeExpression := new(RangeExpression)
+		rangeExpression.Start = leftPrimary
+		rangeExpression.IncludeEnd = parser.CurrentToken.Kind == TokenTypeEllipsis // 三点表示闭区间，包括终点
+		parser.PeekNextToken()                                                     // 移动过 三点或两点 符号
+		if right := parser.ParsePrimaryExpression(); right != nil {
+			rangeExpression.End = right
+			return rangeExpression // 区间表达式比较独立，不需要再额外操作
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				"expected a primary expression as range endpoint!", ParsingUnexpected))
+		}
+	} else if priority := GetBinaryOperatorPriority(parser.CurrentToken); priority != 99 {
 		// 证明是 二元运算符
 		binaryExpression := new(BinaryExpression)
 		binaryExpression.Operator = parser.CurrentToken
@@ -375,7 +388,7 @@ func (parser *Parser) TryParseBinaryExpression(left Expression) Expression {
 			binaryExpression.Right = r
 			return binaryExpression
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a right node for binary expression!", ParsingUnexpected))
 		}
 	}

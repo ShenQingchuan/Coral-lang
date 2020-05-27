@@ -10,6 +10,7 @@ const (
 	ExpressionTypeNewInstance
 	ExpressionTypeUnary
 	ExpressionTypeBinary
+	ExpressionTypeRange
 )
 
 // 定义基本表达式的类型来区分
@@ -479,6 +480,26 @@ func (it *BinaryExpression) SimpleStatementNodeType() int {
 	return SimpleStmtTypeExpression
 }
 func (it *BinaryExpression) StatementNodeType() int {
+	return StatementTypeSimple
+}
+
+// 区间表达式节点
+type RangeExpression struct {
+	Start      Expression
+	End        Expression
+	IncludeEnd bool
+}
+
+func (it *RangeExpression) ExpressionNodeType() int {
+	return ExpressionTypeRange
+}
+func (it *RangeExpression) NodeType() string {
+	return "Range_Expression"
+}
+func (it *RangeExpression) SimpleStatementNodeType() int {
+	return SimpleStmtTypeExpression
+}
+func (it *RangeExpression) StatementNodeType() int {
 	return StatementTypeSimple
 }
 

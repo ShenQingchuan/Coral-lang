@@ -62,6 +62,24 @@ func TestBinaryExpression(t *testing.T) {
 		So(hex.Value.Str, ShouldEqual, "0x3f21")
 	})
 }
+func TestRangeExpression(t *testing.T) {
+	Convey("测试区间表达式：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "0..arr.length")
+		So(parser.CurrentToken.Str, ShouldEqual, "0")
+
+		rangeExpression, isRange := parser.ParseExpression().(*RangeExpression)
+		So(isRange, ShouldEqual, true)
+		So(rangeExpression.IncludeEnd, ShouldEqual, false)
+
+		So(rangeExpression.Start.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual, "0")
+		So(rangeExpression.End.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"arr")
+		So(rangeExpression.End.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual, "length")
+		So(rangeExpression.End.(*MemberExpression).Member.MemberNext.Operand, ShouldEqual, nil)
+		So(rangeExpression.End.(*MemberExpression).Member.MemberNext.MemberNext, ShouldEqual, nil)
+	})
+}
 func TestIndexSliceCallMemberExpression(t *testing.T) {
 	Convey("测试索引表达式：", t, func() {
 		parser := new(Parser)

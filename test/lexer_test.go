@@ -339,7 +339,6 @@ func TestGetNextToken(t *testing.T) {
 	InitLexerFromString(testLexer, `
 	from httplib import {
 	 	HttpRequest as req
-		HttpResponse as resp
   }
 
   var i int = 1 *3 <<= 5, e = esm(6 |= 0.2);
@@ -357,9 +356,6 @@ func TestGetNextToken(t *testing.T) {
 		{TokenTypeIdentifier, "HttpRequest"},
 		{TokenTypeAs, "as"},
 		{TokenTypeIdentifier, "req"},
-		{TokenTypeIdentifier, "HttpResponse"},
-		{TokenTypeAs, "as"},
-		{TokenTypeIdentifier, "resp"},
 		{TokenTypeRightBrace, "}"},
 		{TokenTypeVar, "var"},
 		{TokenTypeIdentifier, "i"},

@@ -12,5 +12,6 @@ const (
 	LexParenthesesUnclosed
 	LexBracketUnclosed
 	LexBraceUnclosed
+	LexingUnexpected
 	ParsingUnexpected
 )

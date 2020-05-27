@@ -93,6 +93,8 @@ const (
 	TokenTypeAmpersandEqual        // &=
 	TokenTypeVerticalEqual         // |=
 	TokenTypeCaretEqual            // ^=
+	TokenTypeEllipsis              // ...
+	TokenTypeDoubleDot             // ..
 
 	TokenTypeDecimalInteger
 	TokenTypeOctalInteger
@@ -336,6 +338,11 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 			str += string(lexer.PeekChar().Rune)
 			lexer.GoNextChar()
 		} else if lexer.PeekChar().MatchRune('.') {
+			// 如果是两个点连着，视为区间运算符
+			if lexer.PeekNextChar(lexer.PeekChar().ByteLength).MatchRune('.') {
+				break // 从这个点 此处断开，用已经获得的字符串 str 组成一个数值 token
+			}
+
 			if !hadPoint && !hadETag { // 读入小数点
 				hadPoint = true
 				resultType = TokenTypeFloat
@@ -369,11 +376,19 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 
 	// 如果科学记数法是 '0e' 开头，认为其无意义，抛出报错
 	if len(str) >= 2 && str[0:2] == "0e" {
-		return nil, NewCoralError("Syntax", "incorrect format for scientific notation! ['0e' is meaningless]", LexExponentFormatError)
+		return nil, NewCoralError("Syntax",
+			"incorrect format for scientific notation! \nTips: Exponent starts from '0e' is meaningless.",
+			LexExponentFormatError)
 	}
 	// 如果 str 以 '0' 起头 (只是 "0" 则不管) -> 要考虑去掉头部无用的 '0'
 	if str != "0" && (str[0] == '0' && str[1] != '.') { // 不是 0. 起头的小数
 		str = str[1:]
+	}
+	// 如果 str 最后一个字符是 'e' 也说明有问题
+	if str[len(str)-1] == 'e' {
+		return nil, NewCoralError("Syntax",
+			"incorrect format for scientific notation! \nTips: Exponent can't just end with 'e'.",
+			LexExponentFormatError)
 	}
 
 	return lexer.makeToken(resultType, str), nil
@@ -652,6 +667,14 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 			lexer.BracketCount--
 			return lexer.makeToken(TokenTypeRightBracket, "]"), nil
 		case '.':
+			if lexer.PeekNextChar(c.ByteLength).MatchRune('.') {
+				if lexer.PeekNextCharByStep(c.ByteLength, 2).MatchRune('.') {
+					lexer.GoNextCharByStep(3)
+					return lexer.makeToken(TokenTypeEllipsis, "..."), nil
+				}
+				lexer.GoNextCharByStep(2)
+				return lexer.makeToken(TokenTypeDoubleDot, ".."), nil
+			}
 			lexer.GoNextChar()
 			return lexer.makeToken(TokenTypeDot, "."), nil
 		case '~':

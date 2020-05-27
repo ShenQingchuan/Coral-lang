@@ -56,7 +56,7 @@ func (parser *Parser) ParseSimpleStatement() SimpleStatement {
 			assignListStatement.Targets = primaryExprList
 
 			if !parser.MatchCurrentTokenType(TokenTypeEqual) {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 					"expected a equal mark for assignment list!", ParsingUnexpected))
 			}
 			assignListStatement.Token = parser.CurrentToken
@@ -68,7 +68,7 @@ func (parser *Parser) ParseSimpleStatement() SimpleStatement {
 					"to terminate a assignment list!")
 				return assignListStatement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 					"expected a list of expression as values for assignment list!", ParsingUnexpected))
 			}
 
@@ -113,7 +113,7 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 					// 一个变量定义元素完成，此时 token 应为 ',' 会在外部循环断言
 					return varDeclElement
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 						fmt.Sprintf("expected an expression as initial value for variable '%s'", varNameToken.Str),
 						ParsingUnexpected))
 				}
@@ -122,7 +122,7 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 				// 那么一个变量定义元素可以结束了，不移过逗号 ',' 而等待外部断言
 				return varDeclElement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 					fmt.Sprintf("unexpected token: '%s', incomplete variable declaration!", parser.CurrentToken.Str),
 					ParsingUnexpected))
 			}
@@ -134,14 +134,14 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 					varDeclElement.InitValue = initValue
 					return varDeclElement
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 						fmt.Sprintf("expected an expression as initial value to type inferring"+
 							"for the non-typed variable '%s'!", varNameToken.Str),
 						ParsingUnexpected))
 				}
 			} else {
 				// 当前是其他不正确的 token
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 					fmt.Sprintf("unexpected token '%s' for variabel declaration!", parser.CurrentToken.Str),
 					ParsingUnexpected))
 			}
@@ -211,7 +211,7 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 				Expression: expressionList,
 			}
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected an expression for return statement!", ParsingUnexpected))
 		}
 	}
@@ -225,7 +225,7 @@ func (parser *Parser) ParseAssignListStatement() *AssignListStatement {
 		assignListStatement.Targets = primaryExprList
 
 		if !parser.MatchCurrentTokenType(TokenTypeEqual) {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a equal mark for assignment list!", ParsingUnexpected))
 		}
 		assignListStatement.Token = parser.CurrentToken
@@ -237,7 +237,7 @@ func (parser *Parser) ParseAssignListStatement() *AssignListStatement {
 				"to terminate a assignment list!")
 			return assignListStatement
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a list of expression as values for assignment list!", ParsingUnexpected))
 		}
 	}
@@ -258,7 +258,7 @@ func (parser *Parser) ParseImportElement() *ImportElement {
 				importElement.As = asName
 				return importElement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 					"expected an identifier as target's another name for import statement!", ParsingUnexpected))
 			}
 		}
@@ -308,11 +308,11 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 							parser.PeekNextToken() // 移过 '}'
 							return listImportStatement
 						} else {
-							CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+							CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 								"expected a right brace as ending for a block import statement!", ParsingUnexpected))
 						}
 					} else {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 							"expected at least two import element for a block import statement!", ParsingUnexpected))
 					}
 				} else if importElement := parser.ParseImportElement(); importElement != nil {
@@ -323,16 +323,16 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 						parser.PeekNextToken() // 移过 ';'
 						return singleImportStatement
 					} else {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 							"expected a semicolon as ending for import statement!", ParsingUnexpected))
 					}
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 						"expected a module name as target for import statement!", ParsingUnexpected))
 				}
 			}
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a module name as source for import statement!", ParsingUnexpected))
 		}
 	}
@@ -352,13 +352,13 @@ func (parser *Parser) ParseEnumElement() *EnumElement {
 				enumElement.Value = decimalLit
 				return enumElement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 					"expected a decimal literal as the enum element's value!", ParsingUnexpected))
 			}
 		}
 
 		if !parser.MatchCurrentTokenType(TokenTypeComma) && !parser.MatchCurrentTokenType(TokenTypeRightBrace) {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected a comma to separate multiple enum elements!", ParsingUnexpected))
 		}
 		return enumElement
@@ -390,7 +390,7 @@ func (parser *Parser) ParseEnumStatement() *EnumStatement {
 					parser.PeekNextToken() // 移过 '}'
 					return enumStatement
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 						"expected a right brace as ending for enum definition!", ParsingUnexpected))
 				}
 			}
@@ -415,7 +415,7 @@ func (parser *Parser) ParseBlockStatement() *BlockStatement {
 		}
 
 		// 能结束循环到此处说明有问题、没有正常解析到右括号
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 			"expected a right brace as ending for block statement!", ParsingUnexpected))
 	}
 
@@ -431,11 +431,11 @@ func (parser *Parser) ParseIfElement() *IfElement {
 			ifElement.Block = block
 			return ifElement
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				`expected a block as a "if" block for "if" statement!`, ParsingUnexpected))
 		}
 	} else {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 			`expected an expression as a condition for "if" statement!`, ParsingUnexpected))
 	}
 
@@ -460,7 +460,7 @@ func (parser *Parser) ParseIfStatement() *IfStatement {
 				if elseBlock := parser.ParseBlockStatement(); elseBlock != nil {
 					ifStatement.Else = elseBlock
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 						`expected a block statement for "else" statement!`, ParsingUnexpected))
 				}
 			}
@@ -480,7 +480,7 @@ func (parser *Parser) ParseElifStatements() []*IfElement {
 			if elifElement := parser.ParseIfElement(); elifElement != nil {
 				elifElements = append(elifElements, elifElement)
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile Error",
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 					`expected an condition and block statement for "elif" statement!`, ParsingUnexpected))
 			}
 		} else {
