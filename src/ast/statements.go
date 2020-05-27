@@ -302,7 +302,7 @@ type SwitchStatementCase interface {
 
 // 分支语句匹配条件单元
 type SwitchStatementNormalCase struct {
-	Conditions []*Expression
+	Conditions []Expression
 	Block      *BlockStatement
 }
 
@@ -315,8 +315,7 @@ func (it *SwitchStatementNormalCase) SwitchStatementCaseNodeType() int {
 
 // 分支语句匹配条件范围
 type SwitchStatementRangeCase struct {
-	From  Expression
-	To    Expression
+	Range *RangeExpression
 	Block *BlockStatement
 }
 
@@ -329,10 +328,9 @@ func (it *SwitchStatementRangeCase) SwitchStatementCaseNodeType() int {
 
 // 条件语句节点
 type SwitchStatement struct {
-	Keyword *Token
 	Entry   Expression
 	Default *BlockStatement
-	Cases   []*SwitchStatementCase
+	Cases   []SwitchStatementCase
 }
 
 func (it *SwitchStatement) NodeType() string {

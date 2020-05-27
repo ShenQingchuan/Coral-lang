@@ -390,3 +390,53 @@ func TestIfStatement(t *testing.T) {
 			"dd")
 	})
 }
+func TestSwitchStatement(t *testing.T) {
+	Convey("测试分支语句: ", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `switch tom.grade {
+        default {
+            println("incorrect grade number!");
+        }
+        case 0...59 {
+            println("Failed.");
+        }
+        case 60...100 {
+            println("Lucky pass!");
+        }
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "switch")
+
+		switchStatement, isSwitch := parser.ParseStatement().(*SwitchStatement)
+		So(isSwitch, ShouldEqual, true)
+		So(switchStatement.Entry.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"tom")
+		So(switchStatement.Entry.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+			"grade")
+		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"println")
+		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+			"incorrect grade number!")
+
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"0")
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.IncludeEnd, ShouldEqual,
+			true)
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"59")
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"println")
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+			"Failed.")
+
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"60")
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.IncludeEnd, ShouldEqual,
+			true)
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"100")
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"println")
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+			"Lucky pass!")
+	})
+}

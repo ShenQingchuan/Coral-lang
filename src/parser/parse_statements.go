@@ -32,6 +32,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if ifStatement := parser.ParseIfStatement(); ifStatement != nil {
 		return ifStatement
 	}
+	if switchStatement := parser.ParseSwitchStatement(); switchStatement != nil {
+		return switchStatement
+	}
 
 	return nil
 }
@@ -213,32 +216,6 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 		} else {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected an expression for return statement!", ParsingUnexpected))
-		}
-	}
-
-	return nil
-}
-
-func (parser *Parser) ParseAssignListStatement() *AssignListStatement {
-	if primaryExprList := parser.ParsePrimaryExpressionList(); primaryExprList != nil {
-		assignListStatement := new(AssignListStatement)
-		assignListStatement.Targets = primaryExprList
-
-		if !parser.MatchCurrentTokenType(TokenTypeEqual) {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
-				"expected a equal mark for assignment list!", ParsingUnexpected))
-		}
-		assignListStatement.Token = parser.CurrentToken
-		parser.PeekNextToken() // 移过 '='
-
-		if valueList := parser.ParseExpressionList(); valueList != nil {
-			assignListStatement.Values = valueList
-			parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon",
-				"to terminate a assignment list!")
-			return assignListStatement
-		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
-				"expected a list of expression as values for assignment list!", ParsingUnexpected))
 		}
 	}
 
@@ -492,4 +469,104 @@ func (parser *Parser) ParseElifStatements() []*IfElement {
 		return nil
 	}
 	return elifElements
+}
+
+func (parser *Parser) ParseSwitchCase() (SwitchStatementCase, bool) {
+	if parser.MatchCurrentTokenType(TokenTypeCase) {
+		parser.PeekNextToken() // 移过 'case'
+		if caseExpr := parser.ParseExpression(); caseExpr != nil {
+			rangeExpr, isRange := caseExpr.(*RangeExpression)
+			if isRange {
+				rangeCase := new(SwitchStatementRangeCase)
+				rangeCase.Range = rangeExpr
+				if block := parser.ParseBlockStatement(); block != nil {
+					rangeCase.Block = block
+					return rangeCase, false
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+						"expected a block statement as case handler!", ParsingUnexpected))
+				}
+			} else {
+				normalCase := new(SwitchStatementNormalCase)
+				normalCase.Conditions = append(normalCase.Conditions, caseExpr)
+				// 要根据逗号情况：
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextToken() // 移过 ','
+					for condition := parser.ParseExpression(); condition != nil; condition = parser.ParseExpression() {
+						normalCase.Conditions = append(normalCase.Conditions, condition)
+						if parser.MatchCurrentTokenType(TokenTypeComma) {
+							parser.PeekNextToken() // 移过 ','
+						} else {
+							break
+						}
+					}
+					if normalBlock := parser.ParseBlockStatement(); normalBlock != nil {
+						normalCase.Block = normalBlock
+						return normalCase, false
+					} else {
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+							"expected a block statement as case handler!", ParsingUnexpected))
+					}
+				} else {
+					if caseBlock := parser.ParseBlockStatement(); caseBlock != nil {
+						normalCase.Block = caseBlock
+						return normalCase, false
+					} else {
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+							"expected a block statement as case handler!", ParsingUnexpected))
+					}
+				}
+			}
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				"expected an expression as a case!", ParsingUnexpected))
+		}
+	} else if parser.MatchCurrentTokenType(TokenTypeDefault) {
+		parser.PeekNextToken() // 移过 'default'
+		return nil, true
+	}
+
+	return nil, false
+}
+
+func (parser *Parser) ParseSwitchStatement() *SwitchStatement {
+	if parser.MatchCurrentTokenType(TokenTypeSwitch) {
+		parser.PeekNextToken() // 移过 'switch'
+
+		if entry := parser.ParseExpression(); entry != nil {
+			switchStatement := new(SwitchStatement)
+			switchStatement.Entry = entry
+
+			if parser.MatchCurrentTokenType(TokenTypeLeftBrace) {
+				parser.PeekNextToken() // 移过 '{'
+
+				for _case, isDefault := parser.ParseSwitchCase(); _case != nil || isDefault; _case, isDefault = parser.ParseSwitchCase() {
+					if isDefault {
+						if defaultBlock := parser.ParseBlockStatement(); defaultBlock != nil {
+							switchStatement.Default = defaultBlock
+						} else {
+							CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+								`expected a block after 'default' keyword in switch statement!`, ParsingUnexpected))
+						}
+					} else {
+						switchStatement.Cases = append(switchStatement.Cases, _case)
+					}
+				}
+
+				if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+					parser.PeekNextToken() // 移过 '}'
+					return switchStatement
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+						"expected a right brace as ending for switch statement!", ParsingUnexpected))
+				}
+			}
+
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				"expected an expression as target for switch statement!", ParsingUnexpected))
+		}
+	}
+
+	return nil
 }
