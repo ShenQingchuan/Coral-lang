@@ -1,0 +1,8 @@
+site_name: Coral 编程语言官方文档
+nav:
+  - 首页: index.md
+  - 基础语法: grammar.md
+  - 变量与常量: variables.md
+theme: readthedocs
+docs_dir: docs_src
+site_dir: docs

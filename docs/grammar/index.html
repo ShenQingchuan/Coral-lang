@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>基础语法 - Coral 编程语言官方文档</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "\u57fa\u7840\u8bed\u6cd5";
+    var mkdocs_page_input_path = "grammar.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Coral 编程语言官方文档</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">首页</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">基础语法</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#_2">文件概念</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_3">终结分隔符</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_4">注释</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_5">标识符</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_6">关键字</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../variables/">变量与常量</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Coral 编程语言官方文档</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>基础语法</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="_1">基础语法</h1>
+<p>Coral 程序可以由多个标记组成，可以是关键字，标识符，常量，字符串，符号。如以下语句由 6 个标记组成：</p>
+<pre><code class="coral">println(&quot;My name is &quot; + name)
+</code></pre>
+
+<p>6 个标记是(每行一个)：</p>
+<pre><code class="txt">println
+(
+&quot;My name is &quot;
++
+name
+)
+</code></pre>
+
+<h2 id="_2">文件概念</h2>
+<p>Coral 的目标是将 <code>.coral</code> 源代码编译到 <code>.cbytes</code> 字节码文件，然后通过虚拟机执行。</p>
+<p>我们倾向于让这门语言看上去像脚本语言一样，没有所谓的 <code>main()</code> 函数。</p>
+<pre><code class="bash">coral out.cbytes
+</code></pre>
+
+<h2 id="_3">终结分隔符</h2>
+<p>在 Coral 程序中，每个语句正如 C 家族中的其它语言一样以分号 <code>;</code> 结尾。以下为两个语句：</p>
+<pre><code class="coral">var msg = &quot;Hello World&quot;
+println(msg);
+</code></pre>
+
+<h2 id="_4">注释</h2>
+<p>注释不会被编译，甚至在词法分析阶段就被忽略了。</p>
+<p>单行注释是最常见的注释形式，你可以在任何地方使用以 // 开头的单行注释。多行注释也叫块注释，均已以 <code>/*</code> 开头，并以 <code>*/</code> 结尾。如：</p>
+<pre><code class="coral">// 单行注释
+/*
+ Author by 菜鸟教程
+ 我是多行注释
+ */
+</code></pre>
+
+<h2 id="_5">标识符</h2>
+<p>标识符用来命名变量、类型等程序实体。一个标识符实际上就是
+一个或是多个 Unicode 字符（<strong>没错，支持中文变量名</strong>）或下划线 <code>_</code> 组成的序列，
+但是第一个字符必须是 Unicode 字符或下划线，<strong>而不能是数字</strong>。</p>
+<p>以下是有效的标识符：</p>
+<pre><code class="txt">msesh     圆周率   abc   move_name   a_123
+myname50  _temp   j     a23b9       retVal
+</code></pre>
+
+<p>以下是无效的标识符：</p>
+<ul>
+<li><code>1ab</code> 以数字开头</li>
+<li><code>case</code> Coral 语言的关键字</li>
+<li><code>a+b</code> 运算符是不允许的</li>
+</ul>
+<h2 id="_6">关键字</h2>
+<p>下面列举了 Coral 代码中可能会使用到的 33 个关键字或保留字：</p>
+<pre><code class="txt"> import  from     as       enum       break  continue
+ return  var      val      if         elif   else
+ switch  default  case     while      for    each
+ in      fn       class    interface  this   super
+ static  init     new      nil        true   false
+ try     catch    finally
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../variables/" class="btn btn-neutral float-right" title="变量与常量">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href=".." class="btn btn-neutral" title="首页"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../variables/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
