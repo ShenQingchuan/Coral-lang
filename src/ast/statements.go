@@ -342,7 +342,6 @@ func (it *SwitchStatement) StatementNodeType() int {
 
 // while 语句
 type WhileStatement struct {
-	Keyword   *Token
 	Condition Expression
 	Block     *BlockStatement
 }

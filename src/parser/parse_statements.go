@@ -35,6 +35,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if switchStatement := parser.ParseSwitchStatement(); switchStatement != nil {
 		return switchStatement
 	}
+	if whileStatement := parser.ParseWhileStatement(); whileStatement != nil {
+		return whileStatement
+	}
 
 	return nil
 }
@@ -565,6 +568,32 @@ func (parser *Parser) ParseSwitchStatement() *SwitchStatement {
 		} else {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected an expression as target for switch statement!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseWhileStatement() *WhileStatement {
+	if parser.MatchCurrentTokenType(TokenTypeWhile) {
+
+		parser.PeekNextToken() // 移过 'while'
+
+		if condition := parser.ParseExpression(); condition != nil {
+			whileStatement := new(WhileStatement)
+			whileStatement.Condition = condition
+
+			if whileBlock := parser.ParseBlockStatement(); whileBlock != nil {
+				whileStatement.Block = whileBlock
+				return whileStatement
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+					"expected a block statement in while statement!", ParsingUnexpected))
+			}
+
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				"expected an expression as condition for while statement!", ParsingUnexpected))
 		}
 	}
 

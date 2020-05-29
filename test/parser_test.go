@@ -354,7 +354,7 @@ func TestEnumStatement(t *testing.T) {
 	})
 }
 func TestIfStatement(t *testing.T) {
-	Convey("测试条件表达式解析：1", t, func() {
+	Convey("测试条件语句解析：1", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, `if !screen.closed {
 			println("屏幕还没关！");
@@ -379,7 +379,7 @@ func TestIfStatement(t *testing.T) {
 			"屏幕还没关！")
 	})
 
-	Convey("测试条件表达式解析：2", t, func() {
+	Convey("测试条件语句解析：2", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, `if t.getYear() == 2020 {
 			wawa++;
@@ -478,5 +478,33 @@ func TestSwitchStatement(t *testing.T) {
 			"println")
 		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
 			"Lucky pass!")
+	})
+}
+func TestWhileStatement(t *testing.T) {
+	Convey("测试 while 循环解析：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `while num < 10 {
+			println(num);
+			num++;
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "while")
+
+		whileStatement, isWhile := parser.ParseStatement().(*WhileStatement)
+		So(isWhile, ShouldEqual, true)
+
+		So(whileStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"num")
+		So(whileStatement.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeLeftAngle)
+		So(whileStatement.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"10")
+
+		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"println")
+		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"num")
+
+		So(whileStatement.Block.Statements[1].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
+		So(whileStatement.Block.Statements[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"num")
 	})
 }
