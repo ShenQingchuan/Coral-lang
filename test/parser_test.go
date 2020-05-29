@@ -521,16 +521,10 @@ func TestWhileStatement(t *testing.T) {
 	})
 }
 func TestForStatement(t *testing.T) {
-	Convey("测试 for 循环语句：", t, func() {
+	Convey("测试 for 循环语句：1", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, `for var i = 0, j = arr.length; i <= j; i++, j-- {
-			println(num);
-			num++;
-			if num > 3 {
-				break;
-			} else {
-        continue;
-			}
+      println(i + j);
     }`)
 		So(parser.CurrentToken.Str, ShouldEqual, "for")
 
@@ -561,5 +555,30 @@ func TestForStatement(t *testing.T) {
 		So(forStatement.Appendix[1].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoubleMinus)
 		So(forStatement.Appendix[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
 			"j")
+	})
+
+	Convey("测试 for 循环语句：无初始化、无尾缀操作", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `for ;i < arr.length; {
+      println(arr[i]);
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "for")
+
+		forStatement, isFor := parser.ParseStatement().(*ForStatement)
+		So(isFor, ShouldEqual, true)
+
+		So(forStatement.Initial, ShouldEqual, nil)
+
+		So(forStatement.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeLeftAngle)
+		So(forStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"i")
+		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"arr")
+		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+			"length")
+		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Member.MemberNext, ShouldEqual,
+			nil)
+
+		So(len(forStatement.Appendix), ShouldEqual, 0)
 	})
 }

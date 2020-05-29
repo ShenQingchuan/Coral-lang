@@ -610,40 +610,41 @@ func (parser *Parser) ParseWhileStatement() *WhileStatement {
 
 func (parser *Parser) ParseForStatement() *ForStatement {
 	if parser.MatchCurrentTokenType(TokenTypeFor) {
-		parser.PeekNextToken() // 移过 'while'
+		parser.PeekNextToken() // 移过 'for'
+		forStatement := new(ForStatement)
 
 		if initial := parser.ParseSimpleStatement(false); initial != nil {
-			forStatement := new(ForStatement)
 			forStatement.Initial = initial
+		} // 可能没有初始化操作的语句
+
+		// 但总之需要一个分号
+		parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon", "in for clause!")
+
+		if condition := parser.ParseExpression(); condition != nil {
+			forStatement.Condition = condition
 			parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon", "in for clause!")
 
-			if condition := parser.ParseExpression(); condition != nil {
-				forStatement.Condition = condition
-				parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon", "in for clause!")
-
-				for appendix := parser.ParseSimpleStatement(false); appendix != nil; appendix = parser.ParseSimpleStatement(false) {
-					forStatement.Appendix = append(forStatement.Appendix, appendix)
-					if parser.MatchCurrentTokenType(TokenTypeComma) {
-						parser.PeekNextToken() // 移过 ','
-					} else {
-						break
-					}
-				}
-
-				if forBlock := parser.ParseBlockStatement(); forBlock != nil {
-					forStatement.Block = forBlock
-					return forStatement
+			for appendix := parser.ParseSimpleStatement(false); appendix != nil; appendix = parser.ParseSimpleStatement(false) {
+				forStatement.Appendix = append(forStatement.Appendix, appendix)
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextToken() // 移过 ','
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
-						`expected a block statement in "for" statement!`, ParsingUnexpected))
+					break
 				}
+			}
+
+			if forBlock := parser.ParseBlockStatement(); forBlock != nil {
+				forStatement.Block = forBlock
+				return forStatement
 			} else {
 				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
-					`expected an expression as condition in "for" statement!`, ParsingUnexpected))
+					`expected a block statement in "for" statement!`, ParsingUnexpected))
 			}
 		} else {
+			// 不允许没有 for 循环的条件，如果需要一个无限循环，提示建议用 while true
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
-				`expected a simple statement as the initial operation in "for" statement!`, ParsingUnexpected))
+				"expected an expression as condition in \"for\" statement!\n  "+
+					"Tips: If you need a infinite loop, please use 'while true { ... }'", ParsingUnexpected))
 		}
 	}
 

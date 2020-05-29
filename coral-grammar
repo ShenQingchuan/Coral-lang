@@ -153,11 +153,11 @@ switchStmt ::= 'switch' expression '{' ('default' blockStmt)? caseBlock* '}'
 whileStmt ::= 'while' expression blockStmt
 
 /* forStmt Example:
-    for var i=0; i<arr.length; i++ {
-        println(arr[i]);
+    for var i = 0, j = arr.length; i <= j; i++, j-- {
+      println(i + j);
     }
 */
-forStmt ::= 'for' simpleStmt ';' expression ';' expression blockStmt
+forStmt ::= 'for' simpleStmt ';' expression ';' ( () )? blockStmt
 
 /* eachStmt Example:
     each i in [2,4,9,11,18] {
