@@ -157,7 +157,7 @@ whileStmt ::= 'while' expression blockStmt
       println(i + j);
     }
 */
-forStmt ::= 'for' simpleStmt ';' expression ';' ( () )? blockStmt
+forStmt ::= 'for' simpleStmt? ';' expression ';' (simpleStmt (',' simpleStmt)* )? blockStmt
 
 /* eachStmt Example:
     each i in [2,4,9,11,18] {
