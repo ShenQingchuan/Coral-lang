@@ -355,10 +355,9 @@ func (it *WhileStatement) StatementNodeType() int {
 
 // for 语句
 type ForStatement struct {
-	Keyword   *Token
-	Initial   Expression
+	Initial   SimpleStatement
 	Condition Expression
-	tail      Expression
+	Appendix  []SimpleStatement
 	Block     *BlockStatement
 }
 

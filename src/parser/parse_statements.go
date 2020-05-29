@@ -8,7 +8,7 @@ import (
 )
 
 func (parser *Parser) ParseStatement() Statement {
-	if simpleStmt := parser.ParseSimpleStatement(); simpleStmt != nil {
+	if simpleStmt := parser.ParseSimpleStatement(true); simpleStmt != nil {
 		return simpleStmt
 	}
 	if breakStatement := parser.ParseBreakStatement(); breakStatement != nil {
@@ -38,16 +38,16 @@ func (parser *Parser) ParseStatement() Statement {
 	if whileStatement := parser.ParseWhileStatement(); whileStatement != nil {
 		return whileStatement
 	}
+	if forStatement := parser.ParseForStatement(); forStatement != nil {
+		return forStatement
+	}
 
 	return nil
 }
 
-func (parser *Parser) ParseSimpleStatement() SimpleStatement {
+func (parser *Parser) ParseSimpleStatement(needSemiEnd bool) SimpleStatement {
 	if expression := parser.ParseExpression(); expression != nil {
-		if parser.MatchCurrentTokenType(TokenTypeSemi) {
-			parser.PeekNextToken() // 移过分号 ';'
-			return &ExpressionStatement{Expression: expression}
-		} else if expression, isPrimary := expression.(PrimaryExpression); isPrimary && parser.MatchCurrentTokenType(TokenTypeComma) {
+		if expression, isPrimary := expression.(PrimaryExpression); isPrimary && parser.MatchCurrentTokenType(TokenTypeComma) {
 			parser.PeekNextToken() // 移过 ','
 			primaryExprList := []PrimaryExpression{expression}
 			for primaryExpr := parser.ParsePrimaryExpression(); primaryExpr != nil; primaryExpr = parser.ParsePrimaryExpression() {
@@ -84,18 +84,28 @@ func (parser *Parser) ParseSimpleStatement() SimpleStatement {
 			incDecStatement.Operator = parser.CurrentToken
 
 			parser.PeekNextToken() // 移过 '++'/'--'
-			parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon",
-				"to terminate increase/decrease statement")
+
+			if needSemiEnd {
+				parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon",
+					"to terminate increase/decrease statement")
+			}
 			return incDecStatement
+		}
+
+		if needSemiEnd && parser.MatchCurrentTokenType(TokenTypeSemi) {
+			parser.PeekNextToken() // 移过分号 ';'
 		} else {
 			CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
 				"expected a semicolon to terminate this statement!", ParsingUnexpected))
 		}
+		return &ExpressionStatement{Expression: expression}
 	}
 	if varDeclStatement := parser.ParseVarDeclStatement(); varDeclStatement != nil {
+		if needSemiEnd {
+			parser.PeekNextToken() // 移过 ';'
+		}
 		return varDeclStatement
 	}
-
 	return nil
 }
 
@@ -167,8 +177,7 @@ func (parser *Parser) ParseVarDeclStatement() *VarDeclStatement {
 		for varDeclElement := parser.ParseVarDeclElement(); varDeclElement != nil; varDeclElement = parser.ParseVarDeclElement() {
 			varDeclStatement.Declarations = append(varDeclStatement.Declarations, varDeclElement)
 			if parser.MatchCurrentTokenType(TokenTypeSemi) {
-				// 分号即应该结束此段定义语句
-				parser.PeekNextToken() // 移过 ';'
+				// 分号即应该结束此段定义语句，是否取下一个 token 看外部函数是否 needSemiEnd
 				return varDeclStatement
 			} else {
 				parser.AssertCurrentTokenIs(TokenTypeComma, "comma",
@@ -576,7 +585,6 @@ func (parser *Parser) ParseSwitchStatement() *SwitchStatement {
 
 func (parser *Parser) ParseWhileStatement() *WhileStatement {
 	if parser.MatchCurrentTokenType(TokenTypeWhile) {
-
 		parser.PeekNextToken() // 移过 'while'
 
 		if condition := parser.ParseExpression(); condition != nil {
@@ -594,6 +602,48 @@ func (parser *Parser) ParseWhileStatement() *WhileStatement {
 		} else {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected an expression as condition for while statement!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseForStatement() *ForStatement {
+	if parser.MatchCurrentTokenType(TokenTypeFor) {
+		parser.PeekNextToken() // 移过 'while'
+
+		if initial := parser.ParseSimpleStatement(false); initial != nil {
+			forStatement := new(ForStatement)
+			forStatement.Initial = initial
+			parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon", "in for clause!")
+
+			if condition := parser.ParseExpression(); condition != nil {
+				forStatement.Condition = condition
+				parser.AssertCurrentTokenIs(TokenTypeSemi, "semicolon", "in for clause!")
+
+				for appendix := parser.ParseSimpleStatement(false); appendix != nil; appendix = parser.ParseSimpleStatement(false) {
+					forStatement.Appendix = append(forStatement.Appendix, appendix)
+					if parser.MatchCurrentTokenType(TokenTypeComma) {
+						parser.PeekNextToken() // 移过 ','
+					} else {
+						break
+					}
+				}
+
+				if forBlock := parser.ParseBlockStatement(); forBlock != nil {
+					forStatement.Block = forBlock
+					return forStatement
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+						`expected a block statement in "for" statement!`, ParsingUnexpected))
+				}
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+					`expected an expression as condition in "for" statement!`, ParsingUnexpected))
+			}
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				`expected a simple statement as the initial operation in "for" statement!`, ParsingUnexpected))
 		}
 	}
 

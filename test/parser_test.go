@@ -76,8 +76,7 @@ func TestRangeExpression(t *testing.T) {
 		So(rangeExpression.End.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
 			"arr")
 		So(rangeExpression.End.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual, "length")
-		So(rangeExpression.End.(*MemberExpression).Member.MemberNext.Operand, ShouldEqual, nil)
-		So(rangeExpression.End.(*MemberExpression).Member.MemberNext.MemberNext, ShouldEqual, nil)
+		So(rangeExpression.End.(*MemberExpression).Member.MemberNext, ShouldEqual, nil)
 	})
 }
 func TestIndexSliceCallMemberExpression(t *testing.T) {
@@ -369,9 +368,7 @@ func TestIfStatement(t *testing.T) {
 			"screen")
 		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"closed")
-		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext.Operand, ShouldEqual,
-			nil)
-		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext.MemberNext, ShouldEqual,
+		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext, ShouldEqual,
 			nil)
 		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
@@ -521,5 +518,48 @@ func TestWhileStatement(t *testing.T) {
 			"break")
 		So(whileStatement.Block.Statements[2].(*IfStatement).Else.Statements[0].(*ContinueStatement).Token.Str, ShouldEqual,
 			"continue")
+	})
+}
+func TestForStatement(t *testing.T) {
+	Convey("测试 for 循环语句：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `for var i = 0, j = arr.length; i <= j; i++, j-- {
+			println(num);
+			num++;
+			if num > 3 {
+				break;
+			} else {
+        continue;
+			}
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "for")
+
+		forStatement, isFor := parser.ParseStatement().(*ForStatement)
+		So(isFor, ShouldEqual, true)
+
+		So(forStatement.Initial.(*VarDeclStatement).Mutable, ShouldEqual, true)
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[0].VarName.Str, ShouldEqual,
+			"i")
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[0].InitValue.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"0")
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].VarName.Str, ShouldEqual,
+			"j")
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"arr")
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+			"length")
+
+		So(forStatement.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeLeftAngleEqual)
+		So(forStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"i")
+		So(forStatement.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"j")
+
+		So(forStatement.Appendix[0].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
+		So(forStatement.Appendix[0].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"i")
+		So(forStatement.Appendix[1].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoubleMinus)
+		So(forStatement.Appendix[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"j")
 	})
 }

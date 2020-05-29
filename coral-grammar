@@ -85,14 +85,14 @@ expression
     | unaryExpr
     | binaryExpr
 expressionList ::= expression (',' expression)*
-primaryExpressionList ::= primaryExpr (',' primaryExpr)
+primaryExpressionList ::= primaryExpr (',' primaryExpr)*
 
 incDecStmt ::= expression ('++' | '--') ';'
 breakStmt ::= 'break' ';'
 continueStmt ::= 'continue' ';'
 returnStmt ::= 'return' expressionList? ';'
 mixAssignOperator ::= ('+' | '-' | '|' | '^' | '*' | '/' | '%' | '<<' | '>>' | '&') '='
-assignStmt ::= ((primaryExpressionList '=' expressionList) ';'
+assignStmt ::= (primaryExpressionList '=' expressionList) ';'
 typeName ::= IDENTIFIER ('.' IDENTIFIER)*
 typeDescription ::= ('[' typeDescription ']') | (typeName ('<' typeName (',' typeName)* '>')? )
 variableDeclElement ::= IDENTIFIER (typeDescription | (typeDescription? '=' expression))
@@ -128,8 +128,11 @@ ifStmt ::= 'if' expression blockStmt ('elif' expression blockStmt)* ('else' bloc
         case 71...80 {
             println("Not bad.");
         }
-        case 81...100: {
+        case 81...99 {
             println("Excellent!");
+        }
+        case 100 {
+          println("Full Mark!");
         }
     }
 */
@@ -154,10 +157,10 @@ whileStmt ::= 'while' expression blockStmt
         println(arr[i]);
     }
 */
-forStmt ::= 'for' expression ';' expression ';' expression blockStmt
+forStmt ::= 'for' simpleStmt ';' expression ';' expression blockStmt
 
 /* eachStmt Example:
-    each i in arr {
+    each i in [2,4,9,11,18] {
         println(i);
     }
 */

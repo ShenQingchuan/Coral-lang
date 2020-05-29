@@ -219,10 +219,12 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 		if idList := parser.ParseIdentifierList(); idList != nil {
 			memberExpression.Member = new(MemberLinkNode)
 			cursor := memberExpression.Member // 开始根据得到的 标识符列表构建成员链
-			for _, id := range idList {
+			for i, id := range idList {
 				cursor.Operand = id
-				cursor.MemberNext = new(MemberLinkNode) // 结链
-				cursor = cursor.MemberNext              // -> next
+				if i != len(idList)-1 {
+					cursor.MemberNext = new(MemberLinkNode) // 结链
+					cursor = cursor.MemberNext              // -> next
+				}
 			}
 
 			return parser.TryEnhancePrimaryExpression(memberExpression)
