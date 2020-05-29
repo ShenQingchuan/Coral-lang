@@ -14,7 +14,7 @@ func (parser *Parser) ParseStatement() Statement {
 	if breakStatement := parser.ParseBreakStatement(); breakStatement != nil {
 		return breakStatement
 	}
-	if continueStatement := parser.ParseBreakStatement(); continueStatement != nil {
+	if continueStatement := parser.ParseContinueStatement(); continueStatement != nil {
 		return continueStatement
 	}
 	if returnStatement := parser.ParseReturnStatement(); returnStatement != nil {

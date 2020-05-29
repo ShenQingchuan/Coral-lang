@@ -486,6 +486,11 @@ func TestWhileStatement(t *testing.T) {
 		InitParserFromString(parser, `while num < 10 {
 			println(num);
 			num++;
+			if num > 3 {
+				break;
+			} else {
+        continue;
+			}
     }`)
 		So(parser.CurrentToken.Str, ShouldEqual, "while")
 
@@ -506,5 +511,15 @@ func TestWhileStatement(t *testing.T) {
 		So(whileStatement.Block.Statements[1].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
 		So(whileStatement.Block.Statements[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
 			"num")
+
+		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+			"num")
+		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeRightAngle)
+		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+			"3")
+		So(whileStatement.Block.Statements[2].(*IfStatement).If.Block.Statements[0].(*BreakStatement).Token.Str, ShouldEqual,
+			"break")
+		So(whileStatement.Block.Statements[2].(*IfStatement).Else.Statements[0].(*ContinueStatement).Token.Str, ShouldEqual,
+			"continue")
 	})
 }
