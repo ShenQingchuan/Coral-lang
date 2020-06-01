@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="../css/theme.css" />
   <link rel="stylesheet" href="../css/theme_extra.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  <link href="../styles.css" rel="stylesheet" />
   
   <script>
     // Current page data
@@ -58,7 +59,13 @@
                 <ul class="current">
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">变量与常量</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#_2">多变量声明</a>
+    </li>
     </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../types/">数据类型</a>
                     </li>
                 </ul>
       </div>
@@ -97,15 +104,21 @@
 <p>变量、常量来源于数学，是计算机语言中能储存计算结果或能表示值抽象概念。</p>
 <p>变量可以通过变量名访问，Coral 语言变量名应为一个<a href="../grammar#标识符">标识符</a>。</p>
 <p>声明变量、常量的一般形式是使用 <code>var</code> 或者 <code>val</code> 关键字：var 即 variables，val 即 value</p>
-<p>常量与变量都可以没有初始化值，Coral 编译器会给他们一个默认的 “零值”。</p>
-<p>编译器支持自动类型推断，即声明时可以不指定类型，由编译器来识别。</p>
+<p>由于常量本身就是在定义某种"值"，故而我们要求：<strong>以</strong> <code>val</code> <strong>定义常量时，必须给出初始值。</strong></p>
+<p>常量中的数据类型只可以是：布尔型、数值型（整数型、浮点型）和字符串型。</p>
+<p>编译器支持 <strong>自动类型推断</strong>，即声明时可以不指定类型，由编译器来识别。</p>
 <pre><code class="coral">val a int = 1
 val b = 1       // 系统自动推断变量类型为 int
-val c int       // 如果不在声明时初始化，整型值的零值是 0
-c = 1           // 对常量重新赋值会报错！
+val c int       // ✕ 对于常量，不允许不给出初始化的值
+c = 1           // ✕ 对常量重新赋值会报错！
 
 var x = 5       // 系统自动推断变量类型为Int
 x += 1          // 变量可修改
+</code></pre>
+
+<h2 id="_2">多变量声明</h2>
+<p>为了简化同时定义多个变量的书写，我们设置了如下的语法：</p>
+<pre><code class="coral">var a = 1, b float, c = 9.12e3
 </code></pre>
               
             </div>
@@ -113,6 +126,8 @@ x += 1          // 变量可修改
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../types/" class="btn btn-neutral float-right" title="数据类型">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../grammar/" class="btn btn-neutral" title="基础语法"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -143,6 +158,8 @@ x += 1          // 变量可修改
       
         <span><a href="../grammar/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
+      
+        <span style="margin-left: 15px"><a href="../types/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

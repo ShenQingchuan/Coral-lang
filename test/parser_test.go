@@ -53,7 +53,7 @@ func TestParseLiteral(t *testing.T) {
 		parser := new(Parser)
 		InitParserFromString(parser, `{
 			key1: 1+33,
-      mama: Color.Dark
+			mama: Color.Dark,
 		}`)
 		So(parser.CurrentToken.Str, ShouldEqual, "{")
 
@@ -80,16 +80,32 @@ func TestBinaryExpression(t *testing.T) {
 
 		So(binaryExpression.Operator.Kind, ShouldEqual, TokenTypePlus)
 
-		num := binaryExpression.Left.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName)
+		num := binaryExpression.Left.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName)
 		So(num.GetFullName(), ShouldEqual, "num")
 
-		three := binaryExpression.Left.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*DecimalLit)
+		three := binaryExpression.Left.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*DecimalLit)
 		So(three.Value.Kind, ShouldEqual, TokenTypeDecimalInteger)
 		So(three.Value.Str, ShouldEqual, "3")
 
-		hex := binaryExpression.Right.(*BasicPrimaryExpression).Operand.(*HexadecimalLit)
+		hex := binaryExpression.Right.(*BasicPrimaryExpression).It.(*HexadecimalLit)
 		So(hex.Value.Kind, ShouldEqual, TokenTypeHexadecimalInteger)
 		So(hex.Value.Str, ShouldEqual, "0x3f21")
+	})
+}
+func TestCastExpression(t *testing.T) {
+	Convey("测试类型强转表达式：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "(3.1415 as float64)")
+		So(parser.CurrentToken.Str, ShouldEqual, "(")
+
+		castExpression, isCast := parser.ParseExpression().(*CastExpression)
+		So(isCast, ShouldEqual, true)
+
+		So(castExpression.Type.(*TypeName).GetFullName(), ShouldEqual, "float64")
+		So(castExpression.Source.(*BasicPrimaryExpression).It.(*FloatLit).Value.Str, ShouldEqual,
+			"3.1415")
+		So(castExpression.Source.(*BasicPrimaryExpression).It.(*FloatLit).Accuracy, ShouldEqual,
+			6)
 	})
 }
 func TestRangeExpression(t *testing.T) {
@@ -102,8 +118,8 @@ func TestRangeExpression(t *testing.T) {
 		So(isRange, ShouldEqual, true)
 		So(rangeExpression.IncludeEnd, ShouldEqual, false)
 
-		So(rangeExpression.Start.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual, "0")
-		So(rangeExpression.End.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(rangeExpression.Start.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual, "0")
+		So(rangeExpression.End.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"arr")
 		So(rangeExpression.End.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual, "length")
 		So(rangeExpression.End.(*MemberExpression).Member.MemberNext, ShouldEqual, nil)
@@ -118,9 +134,9 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 		indexExpression, isIndex := parser.ParseExpression().(*IndexExpression)
 		So(isIndex, ShouldEqual, true)
 
-		So(indexExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(indexExpression.Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "arr")
-		So(indexExpression.Index.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(indexExpression.Index.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "i")
 	})
 
@@ -132,9 +148,9 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
 		So(isSlice, ShouldEqual, true)
 
-		So(sliceExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(sliceExpression.Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "arr")
-		So(sliceExpression.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(sliceExpression.End.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "4")
 	})
 
@@ -146,11 +162,11 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
 		So(isSlice, ShouldEqual, true)
 
-		So(sliceExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(sliceExpression.Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "arr")
-		So(sliceExpression.Start.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(sliceExpression.Start.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "kk")
-		So(sliceExpression.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(sliceExpression.End.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "5")
 	})
 
@@ -162,11 +178,11 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 		callExpression, isCall := parser.ParseExpression().(*CallExpression)
 		So(isCall, ShouldEqual, true)
 
-		So(callExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(callExpression.Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "funcA")
-		So(callExpression.Params[0].(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(callExpression.Params[0].(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "i")
-		So(callExpression.Params[1].(*BasicPrimaryExpression).Operand.(*FloatLit).Value.Str,
+		So(callExpression.Params[1].(*BasicPrimaryExpression).It.(*FloatLit).Value.Str,
 			ShouldEqual, "3.11")
 	})
 
@@ -178,7 +194,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 		memberExpression, isMemberExpr := parser.ParseExpression().(*MemberExpression)
 		So(isMemberExpr, ShouldEqual, true)
 
-		So(memberExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(memberExpression.Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "request")
 		So(memberExpression.Member.Operand.Token.Str, ShouldEqual, "query")
 		So(memberExpression.Member.MemberNext.Operand.Token.Str, ShouldEqual, "page")
@@ -195,17 +211,17 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 		callExpression, isIndexOperandCall := sliceExpression.Operand.(*CallExpression)
 		So(isIndexOperandCall, ShouldEqual, true)
 
-		So(callExpression.Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(callExpression.Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "makeArr")
 		So(callExpression.Params[0].(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
-		So(callExpression.Params[0].(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(callExpression.Params[0].(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "dd")
-		So(callExpression.Params[0].(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(callExpression.Params[0].(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "7")
 
-		So(sliceExpression.Start.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(sliceExpression.Start.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "mm")
-		So(sliceExpression.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(sliceExpression.End.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "6")
 	})
 }
@@ -223,7 +239,7 @@ func TestVarValDeclarationStatement(t *testing.T) {
 			"a")
 		So(varDeclStatement.Declarations[0].Type.(*TypeName).GetFullName(), ShouldEqual,
 			"int")
-		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"6")
 	})
 
@@ -239,13 +255,13 @@ func TestVarValDeclarationStatement(t *testing.T) {
 		So(varDeclStatement.Declarations[0].VarName.Str, ShouldEqual,
 			"圆周率")
 		So(varDeclStatement.Declarations[0].Type, ShouldEqual, nil)
-		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).Operand.(*FloatLit).Value.Str, ShouldEqual,
+		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*FloatLit).Value.Str, ShouldEqual,
 			"3.14")
 
 		So(varDeclStatement.Declarations[1].VarName.Str, ShouldEqual,
 			"光速")
 		So(varDeclStatement.Declarations[1].Type, ShouldEqual, nil)
-		So(varDeclStatement.Declarations[1].InitValue.(*BasicPrimaryExpression).Operand.(*ExponentLit).Value.Str, ShouldEqual,
+		So(varDeclStatement.Declarations[1].InitValue.(*BasicPrimaryExpression).It.(*ExponentLit).Value.Str, ShouldEqual,
 			"3e8")
 	})
 }
@@ -262,7 +278,7 @@ func TestUnaryExpression(t *testing.T) {
 		leftUnary, isLeftUnary := binaryExpression.Left.(*UnaryExpression)
 		So(isLeftUnary, ShouldEqual, true)
 		So(leftUnary.Operator.Kind, ShouldEqual, TokenTypeBang)
-		So(leftUnary.Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(leftUnary.Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "m")
 		So(leftUnary.Operand.(*MemberExpression).Member.Operand.Token.Str,
 			ShouldEqual, "tt")
@@ -270,11 +286,11 @@ func TestUnaryExpression(t *testing.T) {
 		rightUnary, isRightUnary := binaryExpression.Right.(*UnaryExpression)
 		So(isRightUnary, ShouldEqual, true)
 		So(rightUnary.Operator.Kind, ShouldEqual, TokenTypeWavy)
-		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "ss")
 		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Member.Operand.Token.Str,
 			ShouldEqual, "k")
-		So(rightUnary.Operand.(*IndexExpression).Index.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(rightUnary.Operand.(*IndexExpression).Index.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "1")
 	})
 }
@@ -289,9 +305,9 @@ func TestNewInstanceExpression(t *testing.T) {
 		So(newInstanceExpression, ShouldNotEqual, nil)
 		So(newInstanceExpression.Class.(*TypeName).GetFullName(),
 			ShouldEqual, "Student")
-		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str,
+		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str,
 			ShouldEqual, "Peter")
-		So(newInstanceExpression.InitParams[1].(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(newInstanceExpression.InitParams[1].(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "18")
 	})
 
@@ -307,7 +323,7 @@ func TestNewInstanceExpression(t *testing.T) {
 			ShouldEqual, "Array")
 		So(newInstanceExpression.Class.(*GenericsTypeLit).GenericsArgs[0].GetFullName(),
 			ShouldEqual, "string")
-		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "3")
 	})
 }
@@ -320,15 +336,15 @@ func TestAssignListStatement(t *testing.T) {
 		assignListStmt, isAssignList := parser.ParseStatement().(*AssignListStatement)
 		So(isAssignList, ShouldEqual, true)
 
-		So(assignListStmt.Targets[0].(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(assignListStmt.Targets[0].(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "num_a")
-		So(assignListStmt.Targets[1].(*IndexExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).GetFullName(),
+		So(assignListStmt.Targets[1].(*IndexExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "x")
-		So(assignListStmt.Targets[1].(*IndexExpression).Index.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(assignListStmt.Targets[1].(*IndexExpression).Index.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "1")
-		So(assignListStmt.Values[0].(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str,
+		So(assignListStmt.Values[0].(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "3")
-		So(assignListStmt.Values[1].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str,
+		So(assignListStmt.Values[1].(*BasicPrimaryExpression).It.(*StringLit).Value.Str,
 			ShouldEqual, "hello")
 	})
 }
@@ -394,15 +410,15 @@ func TestIfStatement(t *testing.T) {
 		So(isIfStmt, ShouldEqual, true)
 
 		So(ifStatement.If.Condition.(*UnaryExpression).Operator.Kind, ShouldEqual, TokenTypeBang)
-		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"screen")
 		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"closed")
 		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext, ShouldEqual,
 			nil)
-		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"屏幕还没关！")
 	})
 
@@ -420,7 +436,7 @@ func TestIfStatement(t *testing.T) {
 		ifStatement, isIfStmt := parser.ParseStatement().(*IfStatement)
 		So(isIfStmt, ShouldEqual, true)
 
-		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"t")
 		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"getYear")
@@ -428,32 +444,32 @@ func TestIfStatement(t *testing.T) {
 			0)
 		So(ifStatement.If.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeDoubleEqual)
 		So(ifStatement.If.Block.Statements[0].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
-		So(ifStatement.If.Block.Statements[0].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.If.Block.Statements[0].(*IncDecStatement).Expression.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"wawa")
 		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeRightAngle)
-		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"m")
 		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"what")
-		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*FloatLit).Value.Str, ShouldEqual,
+		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*FloatLit).Value.Str, ShouldEqual,
 			"3.55")
-		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Targets[0].(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Targets[0].(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"x")
-		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Targets[1].(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Targets[1].(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"y")
-		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Values[0].(*BasicPrimaryExpression).Operand.(*ExponentLit).Value.Str, ShouldEqual,
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Values[0].(*BasicPrimaryExpression).It.(*ExponentLit).Value.Str, ShouldEqual,
 			"1.3e6")
-		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Values[1].(*BasicPrimaryExpression).Operand.(*RuneLit).Value.Str, ShouldEqual,
+		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Values[1].(*BasicPrimaryExpression).It.(*RuneLit).Value.Str, ShouldEqual,
 			"Z")
 		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeEqual)
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"bb")
 		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
 		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual,
 			TokenTypeStar)
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"3")
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"dd")
 	})
 }
@@ -475,35 +491,35 @@ func TestSwitchStatement(t *testing.T) {
 
 		switchStatement, isSwitch := parser.ParseStatement().(*SwitchStatement)
 		So(isSwitch, ShouldEqual, true)
-		So(switchStatement.Entry.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(switchStatement.Entry.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"tom")
 		So(switchStatement.Entry.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"grade")
-		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"incorrect grade number!")
 
-		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"0")
 		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.IncludeEnd, ShouldEqual,
 			true)
-		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"59")
-		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"Failed.")
 
-		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"60")
 		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.IncludeEnd, ShouldEqual,
 			true)
-		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"100")
-		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*StringLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"Lucky pass!")
 	})
 }
@@ -524,25 +540,25 @@ func TestWhileStatement(t *testing.T) {
 		whileStatement, isWhile := parser.ParseStatement().(*WhileStatement)
 		So(isWhile, ShouldEqual, true)
 
-		So(whileStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(whileStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"num")
 		So(whileStatement.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeLeftAngle)
-		So(whileStatement.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(whileStatement.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"10")
 
-		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"num")
 
 		So(whileStatement.Block.Statements[1].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
-		So(whileStatement.Block.Statements[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(whileStatement.Block.Statements[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"num")
 
-		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"num")
 		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeRightAngle)
-		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(whileStatement.Block.Statements[2].(*IfStatement).If.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"3")
 		So(whileStatement.Block.Statements[2].(*IfStatement).If.Block.Statements[0].(*BreakStatement).Token.Str, ShouldEqual,
 			"break")
@@ -564,26 +580,26 @@ func TestForStatement(t *testing.T) {
 		So(forStatement.Initial.(*VarDeclStatement).Mutable, ShouldEqual, true)
 		So(forStatement.Initial.(*VarDeclStatement).Declarations[0].VarName.Str, ShouldEqual,
 			"i")
-		So(forStatement.Initial.(*VarDeclStatement).Declarations[0].InitValue.(*BasicPrimaryExpression).Operand.(*DecimalLit).Value.Str, ShouldEqual,
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"0")
 		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].VarName.Str, ShouldEqual,
 			"j")
-		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"arr")
 		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"length")
 
 		So(forStatement.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeLeftAngleEqual)
-		So(forStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(forStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"i")
-		So(forStatement.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(forStatement.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"j")
 
 		So(forStatement.Appendix[0].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
-		So(forStatement.Appendix[0].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(forStatement.Appendix[0].(*IncDecStatement).Expression.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"i")
 		So(forStatement.Appendix[1].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoubleMinus)
-		So(forStatement.Appendix[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(forStatement.Appendix[1].(*IncDecStatement).Expression.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"j")
 	})
 
@@ -600,9 +616,9 @@ func TestForStatement(t *testing.T) {
 		So(forStatement.Initial, ShouldEqual, nil)
 
 		So(forStatement.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeLeftAngle)
-		So(forStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(forStatement.Condition.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"i")
-		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Operand.(*BasicPrimaryExpression).Operand.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"arr")
 		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"length")
@@ -625,7 +641,21 @@ func TestEachStatement(t *testing.T) {
 
 		So(eachStatement.Element.Token.Str, ShouldEqual, "num")
 		So(eachStatement.Key, ShouldEqual, nil)
-		So(len(eachStatement.Target.(*BasicPrimaryExpression).Operand.(*ArrayLit).ValueList), ShouldEqual, 4)
+		So(len(eachStatement.Target.(*BasicPrimaryExpression).It.(*ArrayLit).ValueList), ShouldEqual, 4)
 	})
 
+	Convey("测试 each 循环语句：2 有 key", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `each num, i in [1,4,5,99] {
+			println("No." + i + num);
+		}`)
+		So(parser.CurrentToken.Str, ShouldEqual, "each")
+
+		eachStatement, isEach := parser.ParseStatement().(*EachStatement)
+		So(isEach, ShouldEqual, true)
+
+		So(eachStatement.Element.Token.Str, ShouldEqual, "num")
+		So(eachStatement.Key.Token.Str, ShouldEqual, "i")
+		So(len(eachStatement.Target.(*BasicPrimaryExpression).It.(*ArrayLit).ValueList), ShouldEqual, 4)
+	})
 }

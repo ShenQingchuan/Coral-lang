@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>数据类型 - Coral 编程语言官方文档</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  <link href="../styles.css" rel="stylesheet" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "\u6570\u636e\u7c7b\u578b";
+    var mkdocs_page_input_path = "types.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Coral 编程语言官方文档</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">首页</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../grammar/">基础语法</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../variables/">变量与常量</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">数据类型</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#_2">基本内置类型</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_3">值类型与引用类型</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_4">零值说明</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_5">类型转换</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Coral 编程语言官方文档</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>数据类型</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="_1">数据类型</h1>
+<p>在 Coral 编程语言中，数据类型用于声明变量和函数。</p>
+<p>在上一章节中我们提到过了变量，变量就是申请内存来存储值。也就是说，当创建变量的时候，需要在内存中申请空间。</p>
+<p>内存管理系统根据变量的类型为变量分配存储空间，分配的空间只能用来储存该类型数据。</p>
+<h2 id="_2">基本内置类型</h2>
+<p>Coral 语言提供了如下几种基本类型。</p>
+<p><strong>数字类型：</strong></p>
+<ul>
+<li>
+<p>整型：</p>
+<ul>
+<li>有符号：<code>int</code>, <code>int8</code>, <code>int16</code>, <code>int64</code></li>
+<li>无符号：<code>uint</code>, <code>uint8</code>, <code>uint16</code>, <code>uint64</code></li>
+</ul>
+</li>
+<li>
+<p>浮点型：<code>float</code>, <code>float64</code></p>
+<ul>
+<li>
+<p><code>float</code>（即其他语言中常见的 <code>float32</code>）的精度是 6 位有效数字</p>
+<p>取值范围是 <strong>10的-38次方到10的38次方</strong>，<code>float</code> 占用 4 字节空间</p>
+</li>
+<li>
+<p><code>float64</code>（即其他语言中常见的 <code>double</code>）的精度是 15 位有效数字</p>
+<p>取值范围是 <strong>10的-308次方到10的308次方</strong>，<code>float64</code> 占用 8 字节空间。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>字符型: <code>rune</code>，实际上等同于 <code>uint16</code>，同 Java 使用 <code>unsigned short</code> 表达 <code>char</code>，可以存储任何字符</p>
+</li>
+<li>
+<p>布尔型：<code>bool</code></p>
+</li>
+</ul>
+<h2 id="_3">值类型与引用类型</h2>
+<p>所有像 <code>int</code>、<code>float</code>、<code>bool</code> 和 <code>rune</code> 这些基本内置类型都属于值类型，使用这些类型的变量直接指向存在内存中的值：</p>
+<p>当使用等号 <code>=</code> 将一个变量的值赋值给另一个变量时，如：<code>j = i</code>，实际上是在内存中将 <code>i</code> 的值进行了拷贝：</p>
+<p>而所谓的引用类型，例如 <code>string</code> 和类创建的对象实例，应当为一个内存的地址值，指向内存中值所在的部分。在有的编程语言中，这样的 "地址值" 被称为
+<strong>指针</strong>，但在 Coral 中，为了降低学习成本，我们倾向于学习 Java 的模式，不为用户提供指针。</p>
+<p>对象实例都是引用数据类型。所有引用类型的默认值都是 <code>nil</code>。</p>
+<p>一个引用变量可以用来引用任何与之兼容的类型。</p>
+<h2 id="_4">零值说明</h2>
+<ul>
+<li>
+<p><strong>整型</strong> 为 <code>0</code></p>
+</li>
+<li>
+<p><strong>浮点型</strong> 为 <code>0.0</code></p>
+</li>
+<li>
+<p><strong>字符型</strong> 为 <code>'\u0000'</code></p>
+</li>
+<li>
+<p><strong>布尔类型</strong> 默认为 <code>false</code></p>
+</li>
+<li>
+<p><strong>字符串</strong> 为 <code>""</code>（空字符串）</p>
+</li>
+</ul>
+<h2 id="_5">类型转换</h2>
+<p><strong>类型转换用于将一种数据类型的变量转换为另外一种类型的变量。</strong>
+Coral 的 <strong>强制</strong> 类型转换基本格式如下：</p>
+<pre><code class="coral">(expression as type_name)
+</code></pre>
+
+<p><code>type_name</code> 为类型，<code>expression</code> 为表达式。<strong>注意：括号是必须要有的。</strong></p>
+<p>数据的类型转换须满足如下规则：</p>
+<ul>
+<li><code>bool</code> 类型的变量转换遵循 <strong>"非零值即 <code>false</code>"</strong> 的定则</li>
+<li>不能把对象类型转换成与其不相关类的对象</li>
+<li>在把容量大的类型转换为容量小的类型时，过程中可能导致溢出或损失精度，例如：</li>
+</ul>
+<pre><code class="coral">var i = 128; // 变量 i 为 int 类型
+var j = (i as byte);
+</code></pre>
+
+<p>因为 <code>byte</code> 类型是 8 位，最大值为 <code>127</code>，
+  所以当 int 强制转换为 byte 类型时，值大于等于 <code>128</code> 时候就会导致溢出。</p>
+<ul>
+<li>浮点数到整数的转换是通过舍弃小数得到，而不是四舍五入，例如：</li>
+</ul>
+<pre><code class="coral">(23.7 as int) == 23;        
+(-45.89 as int) == -45;
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../variables/" class="btn btn-neutral" title="变量与常量"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../variables/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

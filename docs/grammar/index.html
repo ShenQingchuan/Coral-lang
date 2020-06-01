@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="../css/theme.css" />
   <link rel="stylesheet" href="../css/theme_extra.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  <link href="../styles.css" rel="stylesheet" />
   
   <script>
     // Current page data
@@ -64,11 +65,17 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#_6">关键字</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_7">转义字符</a>
+    </li>
     </ul>
                     </li>
                 </ul>
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../variables/">变量与常量</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../types/">数据类型</a>
                     </li>
                 </ul>
       </div>
@@ -131,7 +138,7 @@ println(msg);
 
 <h2 id="_4">注释</h2>
 <p>注释不会被编译，甚至在词法分析阶段就被忽略了。</p>
-<p>单行注释是最常见的注释形式，你可以在任何地方使用以 // 开头的单行注释。多行注释也叫块注释，均已以 <code>/*</code> 开头，并以 <code>*/</code> 结尾。如：</p>
+<p>单行注释是最常见的注释形式，你可以在任何地方使用以 <code>//</code> 开头的单行注释。多行注释也叫块注释，均已以 <code>/*</code> 开头，并以 <code>*/</code> 结尾。如：</p>
 <pre><code class="coral">// 单行注释
 /*
  Author by 菜鸟教程
@@ -163,6 +170,63 @@ myname50  _temp   j     a23b9       retVal
  static  init     new      nil        true   false
  try     catch    finally
 </code></pre>
+
+<h2 id="_7">转义字符</h2>
+<p>Coral 语言支持以下一些特殊的转义字符序列：</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>字符含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>\n</code></td>
+<td>换行</td>
+</tr>
+<tr>
+<td><code>\r</code></td>
+<td>回车</td>
+</tr>
+<tr>
+<td><code>\f</code></td>
+<td>换页符</td>
+</tr>
+<tr>
+<td><code>\b</code></td>
+<td>退格</td>
+</tr>
+<tr>
+<td><code>\0</code></td>
+<td>空字符</td>
+</tr>
+<tr>
+<td><code>\s</code></td>
+<td>空格</td>
+</tr>
+<tr>
+<td><code>\t</code></td>
+<td>制表符</td>
+</tr>
+<tr>
+<td><code>\"</code></td>
+<td>双引号</td>
+</tr>
+<tr>
+<td><code>\'</code></td>
+<td>单引号</td>
+</tr>
+<tr>
+<td><code>\\</code></td>
+<td>反斜杠</td>
+</tr>
+<tr>
+<td><code>\uXXXX</code></td>
+<td>16进制 Unicode 字符</td>
+</tr>
+</tbody>
+</table>
               
             </div>
           </div>

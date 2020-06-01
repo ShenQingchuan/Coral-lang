@@ -155,7 +155,8 @@ func (it *BinaryLit) OperandNodeType() int {
 
 // 浮点数
 type FloatLit struct {
-	Value *Token
+	Value    *Token
+	Accuracy int
 }
 
 func (it *FloatLit) NodeType() string {
@@ -301,7 +302,7 @@ type Operand interface {
 
 // 只是操作数本身的 primaryExpr
 type BasicPrimaryExpression struct {
-	Operand Operand
+	It Operand
 }
 
 func (it *BasicPrimaryExpression) NodeType() string {
@@ -500,6 +501,25 @@ func (it *RangeExpression) SimpleStatementNodeType() int {
 	return SimpleStmtTypeExpression
 }
 func (it *RangeExpression) StatementNodeType() int {
+	return StatementTypeSimple
+}
+
+// 强制类型转换表达式节点
+type CastExpression struct {
+	Source Expression
+	Type   TypeDescription
+}
+
+func (it *CastExpression) ExpressionNodeType() int {
+	return ExpressionTypeRange
+}
+func (it *CastExpression) NodeType() string {
+	return "Cast_Expression"
+}
+func (it *CastExpression) SimpleStatementNodeType() int {
+	return SimpleStmtTypeExpression
+}
+func (it *CastExpression) StatementNodeType() int {
 	return StatementTypeSimple
 }
 

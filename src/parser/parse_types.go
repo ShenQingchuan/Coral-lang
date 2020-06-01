@@ -50,7 +50,7 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 						parser.PeekNextToken() // 移过 '>'
 						return genericsTypeLit // 结束泛型参数解析
 					} else {
-						parser.AssertCurrentTokenIs(TokenTypeComma, "comma", fmt.Sprintf(
+						parser.AssertCurrentTokenIs(TokenTypeComma, "a comma", fmt.Sprintf(
 							"for seperating generics arguments but got '%s'",
 							parser.CurrentToken.Str))
 					}

@@ -628,6 +628,7 @@ func (lexer *Lexer) GetNextToken(allowMoreCharToken bool) (*Token, *CoralError) 
 			}
 			return lexer.ReadIdentifier()
 		case '\t', ' ':
+			lexer.Col += 1
 			lexer.GoNextChar() // skip whitespace
 		case '\n':
 			lexer.Line++

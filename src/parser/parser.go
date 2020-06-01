@@ -4,6 +4,7 @@ import (
 	. "coral-lang/src/ast"
 	. "coral-lang/src/exception"
 	. "coral-lang/src/lexer"
+	. "coral-lang/src/utils"
 	"fmt"
 	"os"
 )
@@ -17,14 +18,18 @@ type Parser struct {
 }
 
 func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
-	if parser.CurrentToken != nil {
-		fmt.Printf("\n* line %d:%d ", parser.CurrentToken.Line, parser.CurrentToken.Col)
-	} else if parser.LastToken != nil {
-		fmt.Printf("\n* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)
+	if parser.LastToken != nil {
+		fmt.Print("\n" + Green(fmt.Sprintf("* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)))
 	}
 	fmt.Println(c.Err)
-	fmt.Printf("* Error code: %d", c.ErrEnum)
+	fmt.Println("* " + Cyan(fmt.Sprintf("Error code: %d", c.ErrEnum)))
 	os.Exit(c.ErrEnum)
+}
+func CoralCompileWarningWithPos(parser *Parser, msg string) {
+	if parser.LastToken != nil {
+		fmt.Print("\n" + Green(fmt.Sprintf("* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)))
+	}
+	CoralCompileWarning(msg)
 }
 
 func InitParserFromBytes(parser *Parser, content []byte) {
@@ -41,8 +46,8 @@ func (parser *Parser) AssertCurrentTokenIs(tokenType TokenType, expected string,
 	if parser.MatchCurrentTokenType(tokenType) {
 		parser.PeekNextToken()
 	} else {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
-			fmt.Sprintf("expected a %s %s!", expected, situation), ParsingUnexpected))
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			fmt.Sprintf("expected %s %s!", expected, situation), ParsingUnexpected))
 	}
 }
 func (parser *Parser) PeekNextToken() {

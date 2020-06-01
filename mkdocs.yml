@@ -3,6 +3,8 @@ nav:
   - 首页: index.md
   - 基础语法: grammar.md
   - 变量与常量: variables.md
+  - 数据类型: types.md
 theme: readthedocs
 docs_dir: docs_src
 site_dir: docs
+extra_css: [styles.css]
