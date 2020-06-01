@@ -50,8 +50,8 @@ escapeValue ::= (unicodeDigits | hexBytesDigits | '\\' ['"abfnrtv\\])
 charLit ::= '\'' (~[\n\\] | escapeValue) '\''
 stringLit ::= '"' (~["\\] | escapeValue)*  '"'
 arrayLit ::= '[' expressionList? ']'
-mapElement ::= IDENTIFIER ':' expression
-mapLit ::= '{' mapElement (',' mapElement)* '}'
+tableElement ::= IDENTIFIER ':' expression
+tableLit ::= '{' tableElement (',' tableElement)* '}'
 lambdaLit ::= '(' expressionList ')' '->' blockStmt
 literal
     ::= nilLit
@@ -66,7 +66,7 @@ literal
     | charLit
     | stringLit
     | arrayLit
-    | mapLit
+    | tableLit
     | LambdaLit
 operandName ::= IDENTIFIER
 operand ::= literal | operandName

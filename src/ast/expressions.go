@@ -229,27 +229,27 @@ func (it *ArrayLit) OperandNodeType() int {
 }
 
 // 字典元素
-type MapElement struct {
+type TableElement struct {
 	Key   *Identifier
 	Value Expression
 }
 
-func (it *MapElement) NodeType() string {
+func (it *TableElement) NodeType() string {
 	return "Map_Element"
 }
 
 // 字典
-type MapLit struct {
-	KeyValueList []*MapElement
+type TableLit struct {
+	KeyValueList []*TableElement
 }
 
-func (it *MapLit) NodeType() string {
+func (it *TableLit) NodeType() string {
 	return "Map_Lit"
 }
-func (it *MapLit) LiteralNodeType() int {
+func (it *TableLit) LiteralNodeType() int {
 	return LiteralNodeTypeMap
 }
-func (it *MapLit) OperandNodeType() int {
+func (it *TableLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 

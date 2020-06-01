@@ -58,14 +58,14 @@ func TestParseLiteral(t *testing.T) {
 		So(parser.CurrentToken.Str, ShouldEqual, "{")
 
 		a := parser.ParseLiteral()
-		mapLit, isMapLit := a.(*MapLit)
-		So(isMapLit, ShouldEqual, true)
+		tableLit, isTableLit := a.(*TableLit)
+		So(isTableLit, ShouldEqual, true)
 
-		So(mapLit.KeyValueList[0].Key.Token.Str, ShouldEqual, "key1")
-		So(mapLit.KeyValueList[0].Value.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
+		So(tableLit.KeyValueList[0].Key.Token.Str, ShouldEqual, "key1")
+		So(tableLit.KeyValueList[0].Value.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
 
-		So(mapLit.KeyValueList[1].Key.Token.Str, ShouldEqual, "mama")
-		_, isMemberExpr := mapLit.KeyValueList[1].Value.(*MemberExpression)
+		So(tableLit.KeyValueList[1].Key.Token.Str, ShouldEqual, "mama")
+		_, isMemberExpr := tableLit.KeyValueList[1].Value.(*MemberExpression)
 		So(isMemberExpr, ShouldEqual, true)
 	})
 }

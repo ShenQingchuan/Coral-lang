@@ -236,17 +236,17 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 	return basic
 }
 
-func (parser *Parser) ParseMapElement() *MapElement {
+func (parser *Parser) ParseTableElement() *TableElement {
 	if parser.MatchCurrentTokenType(TokenTypeIdentifier) {
-		mapElement := new(MapElement)
-		mapElement.Key = &Identifier{Token: parser.CurrentToken}
+		tableElement := new(TableElement)
+		tableElement.Key = &Identifier{Token: parser.CurrentToken}
 		parser.PeekNextToken() // 移过标识符
 
 		parser.AssertCurrentTokenIs(TokenTypeColon, "colon",
 			"in map literal element to separate key and value!")
 		if value := parser.ParseExpression(); value != nil {
-			mapElement.Value = value
-			return mapElement
+			tableElement.Value = value
+			return tableElement
 		} else {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected an expression as value in map literal element!", ParsingUnexpected))
@@ -311,9 +311,9 @@ func (parser *Parser) ParseLiteral() Literal {
 		return &ArrayLit{ValueList: expressionList}
 	case TokenTypeLeftBrace:
 		parser.PeekNextToken() // 移过 '{'
-		var elements []*MapElement
-		for mapElement := parser.ParseMapElement(); mapElement != nil; mapElement = parser.ParseMapElement() {
-			elements = append(elements, mapElement)
+		var elements []*TableElement
+		for tableElement := parser.ParseTableElement(); tableElement != nil; tableElement = parser.ParseTableElement() {
+			elements = append(elements, tableElement)
 
 			if parser.MatchCurrentTokenType(TokenTypeComma) {
 				parser.PeekNextToken() // 移过 ','
@@ -323,7 +323,7 @@ func (parser *Parser) ParseLiteral() Literal {
 		}
 		parser.AssertCurrentTokenIs(TokenTypeRightBrace, "right brace",
 			"in map literal definition!")
-		return &MapLit{KeyValueList: elements}
+		return &TableLit{KeyValueList: elements}
 	}
 }
 
