@@ -24,7 +24,6 @@ table tr, table th {
 /* Padding and font style */
 table td, table th {
     padding: 5px 10px;
-    font-weight: bold;
 }
 
 .wy-nav-content {
