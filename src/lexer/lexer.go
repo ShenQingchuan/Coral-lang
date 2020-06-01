@@ -618,7 +618,7 @@ func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 }
 
 // 词法分析器获取下一个 Token
-func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
+func (lexer *Lexer) GetNextToken(allowMoreCharToken bool) (*Token, *CoralError) {
 	for lexer.BytePos < len(lexer.Content) {
 		c := lexer.PeekChar()
 		switch c.Rune {
@@ -758,7 +758,7 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 			lexer.GoNextChar()
 			return lexer.makeToken(TokenTypeVertical, "|"), nil
 		case '<':
-			if lexer.PeekNextChar(c.ByteLength).MatchRune('<') {
+			if allowMoreCharToken && lexer.PeekNextChar(c.ByteLength).MatchRune('<') {
 				if lexer.PeekNextCharByStep(c.ByteLength, 2).MatchRune('=') {
 					lexer.GoNextCharByStep(3)
 					return lexer.makeToken(TokenTypeDoubleLeftAngleEqual, "<<="), nil
@@ -775,7 +775,7 @@ func (lexer *Lexer) GetNextToken() (*Token, *CoralError) {
 			lexer.GoNextChar()
 			return lexer.makeToken(TokenTypeLeftAngle, "<"), nil
 		case '>':
-			if lexer.PeekNextChar(c.ByteLength).MatchRune('>') {
+			if allowMoreCharToken && lexer.PeekNextChar(c.ByteLength).MatchRune('>') {
 				if lexer.PeekNextCharByStep(c.ByteLength, 2).MatchRune('=') {
 					lexer.GoNextCharByStep(3)
 					return lexer.makeToken(TokenTypeDoubleRightAngleEqual, ">>="), nil

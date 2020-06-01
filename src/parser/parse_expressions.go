@@ -50,8 +50,7 @@ func (parser *Parser) ParseIdentifier() *Identifier {
 		return nil
 	}
 
-	identifier := new(Identifier)
-	identifier.Token = parser.CurrentToken // 以当前标识符为 operand
+	identifier := &Identifier{Token: parser.CurrentToken} // 以当前标识符为 operand
 	parser.PeekNextToken()
 	return identifier
 }
@@ -237,6 +236,26 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 	return basic
 }
 
+func (parser *Parser) ParseMapElement() *MapElement {
+	if parser.MatchCurrentTokenType(TokenTypeIdentifier) {
+		mapElement := new(MapElement)
+		mapElement.Key = &Identifier{Token: parser.CurrentToken}
+		parser.PeekNextToken() // 移过标识符
+
+		parser.AssertCurrentTokenIs(TokenTypeColon, "colon",
+			"in map literal element to separate key and value!")
+		if value := parser.ParseExpression(); value != nil {
+			mapElement.Value = value
+			return mapElement
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				"expected an expression as value in map literal element!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
 // 解析 operand 的 literal 情况
 func (parser *Parser) ParseLiteral() Literal {
 	switch parser.CurrentToken.Kind {
@@ -275,6 +294,36 @@ func (parser *Parser) ParseLiteral() Literal {
 	case TokenTypeFalse:
 		defer parser.PeekNextToken()
 		return &FalseLit{Value: parser.CurrentToken}
+	case TokenTypeLeftBracket:
+		parser.PeekNextToken() // 移过 '['
+		var expressionList []Expression
+		for expression := parser.ParseExpression(); expression != nil; expression = parser.ParseExpression() {
+			expressionList = append(expressionList, expression)
+
+			if parser.MatchCurrentTokenType(TokenTypeComma) {
+				parser.PeekNextToken()
+			} else {
+				break
+			}
+		}
+		parser.AssertCurrentTokenIs(TokenTypeRightBracket, "right bracket",
+			"to close the array literal value!")
+		return &ArrayLit{ValueList: expressionList}
+	case TokenTypeLeftBrace:
+		parser.PeekNextToken() // 移过 '{'
+		var elements []*MapElement
+		for mapElement := parser.ParseMapElement(); mapElement != nil; mapElement = parser.ParseMapElement() {
+			elements = append(elements, mapElement)
+
+			if parser.MatchCurrentTokenType(TokenTypeComma) {
+				parser.PeekNextToken() // 移过 ','
+			} else {
+				break
+			}
+		}
+		parser.AssertCurrentTokenIs(TokenTypeRightBrace, "right brace",
+			"in map literal definition!")
+		return &MapLit{KeyValueList: elements}
 	}
 }
 

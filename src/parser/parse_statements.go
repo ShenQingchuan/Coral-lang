@@ -41,6 +41,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if forStatement := parser.ParseForStatement(); forStatement != nil {
 		return forStatement
 	}
+	if eachStatement := parser.ParseEachStatement(); eachStatement != nil {
+		return eachStatement
+	}
 
 	return nil
 }
@@ -175,7 +178,12 @@ func (parser *Parser) ParseVarDeclStatement() *VarDeclStatement {
 
 		// 开始循环遍历读取 varDeclElement
 		for varDeclElement := parser.ParseVarDeclElement(); varDeclElement != nil; varDeclElement = parser.ParseVarDeclElement() {
+			if !varDeclStatement.Mutable && varDeclElement.InitValue == nil {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+					"no initial value for \"val\" declaration is not allowed!", ParsingUnexpected))
+			}
 			varDeclStatement.Declarations = append(varDeclStatement.Declarations, varDeclElement)
+
 			if parser.MatchCurrentTokenType(TokenTypeSemi) {
 				// 分号即应该结束此段定义语句，是否取下一个 token 看外部函数是否 needSemiEnd
 				return varDeclStatement
@@ -645,6 +653,51 @@ func (parser *Parser) ParseForStatement() *ForStatement {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
 				"expected an expression as condition in \"for\" statement!\n  "+
 					"Tips: If you need a infinite loop, please use 'while true { ... }'", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseEachStatement() *EachStatement {
+	if parser.MatchCurrentTokenType(TokenTypeEach) {
+		parser.PeekNextToken() // 移过 'each'
+		eachStatement := new(EachStatement)
+
+		if elementId := parser.ParseIdentifier(); elementId != nil {
+			eachStatement.Element = elementId
+
+			if parser.MatchCurrentTokenType(TokenTypeComma) {
+				parser.PeekNextToken() // 移过 ','
+				if keyId := parser.ParseIdentifier(); keyId != nil {
+					eachStatement.Key = keyId
+				}
+			} // 没有 key Identifier 也不算错
+
+			if parser.MatchCurrentTokenType(TokenTypeIn) {
+				parser.PeekNextToken() // 移过 'in'
+
+				if iterateTarget := parser.ParseExpression(); iterateTarget != nil {
+					eachStatement.Target = iterateTarget
+
+					if block := parser.ParseBlockStatement(); block != nil {
+						eachStatement.Block = block
+						return eachStatement
+					} else {
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+							"expected a block statement for \"each\" iteration loop!", ParsingUnexpected))
+					}
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+						"expected an expression as a target for \"each\" iteration loop!", ParsingUnexpected))
+				}
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+					"expected a \"in\" keyword for \"each\" iteration loop!", ParsingUnexpected))
+			}
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				"expected at least one identifier for \"each\" iteration loop!", ParsingUnexpected))
 		}
 	}
 

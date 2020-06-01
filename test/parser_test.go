@@ -38,6 +38,36 @@ func TestParseLiteral(t *testing.T) {
 		_, isExponentLit := a.(*ExponentLit)
 		So(isExponentLit, ShouldEqual, true)
 	})
+
+	Convey("测试解析字面量值：数组字面量", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "[1,44, 9, 65]")
+		So(parser.CurrentToken.Str, ShouldEqual, "[")
+
+		a := parser.ParseLiteral()
+		_, isArrayLit := a.(*ArrayLit)
+		So(isArrayLit, ShouldEqual, true)
+	})
+
+	Convey("测试解析字面量值：映射表字面量", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `{
+			key1: 1+33,
+      mama: Color.Dark
+		}`)
+		So(parser.CurrentToken.Str, ShouldEqual, "{")
+
+		a := parser.ParseLiteral()
+		mapLit, isMapLit := a.(*MapLit)
+		So(isMapLit, ShouldEqual, true)
+
+		So(mapLit.KeyValueList[0].Key.Token.Str, ShouldEqual, "key1")
+		So(mapLit.KeyValueList[0].Value.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
+
+		So(mapLit.KeyValueList[1].Key.Token.Str, ShouldEqual, "mama")
+		_, isMemberExpr := mapLit.KeyValueList[1].Value.(*MemberExpression)
+		So(isMemberExpr, ShouldEqual, true)
+	})
 }
 func TestBinaryExpression(t *testing.T) {
 	Convey("测试二元表达式：", t, func() {
@@ -581,4 +611,21 @@ func TestForStatement(t *testing.T) {
 
 		So(len(forStatement.Appendix), ShouldEqual, 0)
 	})
+}
+func TestEachStatement(t *testing.T) {
+	Convey("测试 each 循环语句：1 无 key", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `each num in [1,4,5,99] {
+			println(num);
+		}`)
+		So(parser.CurrentToken.Str, ShouldEqual, "each")
+
+		eachStatement, isEach := parser.ParseStatement().(*EachStatement)
+		So(isEach, ShouldEqual, true)
+
+		So(eachStatement.Element.Token.Str, ShouldEqual, "num")
+		So(eachStatement.Key, ShouldEqual, nil)
+		So(len(eachStatement.Target.(*BasicPrimaryExpression).Operand.(*ArrayLit).ValueList), ShouldEqual, 4)
+	})
+
 }

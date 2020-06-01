@@ -370,8 +370,8 @@ func (it *ForStatement) StatementNodeType() int {
 
 // each 语句
 type EachStatement struct {
-	Keyword *Token
-	Names   []*Identifier
+	Element *Identifier
+	Key     *Identifier
 	Target  Expression
 	Block   *BlockStatement
 }

@@ -50,7 +50,7 @@ escapeValue ::= (unicodeDigits | hexBytesDigits | '\\' ['"abfnrtv\\])
 charLit ::= '\'' (~[\n\\] | escapeValue) '\''
 stringLit ::= '"' (~["\\] | escapeValue)*  '"'
 arrayLit ::= '[' expressionList? ']'
-mapElement ::= expression ':' expression
+mapElement ::= IDENTIFIER ':' expression
 mapLit ::= '{' mapElement (',' mapElement)* '}'
 lambdaLit ::= '(' expressionList ')' '->' blockStmt
 literal
@@ -68,7 +68,7 @@ literal
     | arrayLit
     | mapLit
     | LambdaLit
-operandName ::= IDENTIFIER ('.' IDENTIFIER)*
+operandName ::= IDENTIFIER
 operand ::= literal | operandName
 index ::= '[' expression ']'
 slice ::= '[' expression? ':' expression? ']'
@@ -167,7 +167,7 @@ forStmt ::= 'for' simpleStmt? ';' expression ';' (simpleStmt (',' simpleStmt)* )
 eachStmt ::= 'each' IDENTIFIER (',' IDENTIFIER)? 'in' expression blockStmt
 
 /* functionStmt Example:
-    fn fibonacci(n int) {
+    fn fibonacci(n int) int {
         var a = n % 2, b = 1;
         for var i = 0; i < n/2; i++ {
             a += b;
@@ -181,11 +181,11 @@ argument ::= IDENTIFIER typeDescription
 argumentList ::= argument (',' argument)*
 resultList ::= typeDescription (',' typeDescription)*
 signature ::= '(' argumentList* ')' resultList?
-functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
+functionDeclaration ::= 'fn' IDENTIFIER signature blockStmt
 
 /* classStmt Example:
-    class VideoDisk : Disk <- Playable {
-        val time int;
+    class VideoDisk<T> : Disk <- Playable {
+        val time T;
         var movieName string;
         var movieDirector string;
         var productionCompany string;
@@ -200,10 +200,10 @@ functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
     }
 
     var cd1 = new VideoDisk(
-        time=6491,
-        movieName="孤岛漂流",
-        movieDirector="John",
-        productionCompany="Kaddish Movie"
+        6491,
+        "孤岛漂流",
+        "John",
+        "Kaddish Movie"
     );
 */
 scopeKeyword ::= 'public' | 'private' | 'protected'

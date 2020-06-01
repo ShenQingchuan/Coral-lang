@@ -46,7 +46,16 @@ func (parser *Parser) AssertCurrentTokenIs(tokenType TokenType, expected string,
 	}
 }
 func (parser *Parser) PeekNextToken() {
-	token, err := parser.Lexer.GetNextToken()
+	token, err := parser.Lexer.GetNextToken(true)
+	if err != nil {
+		CoralErrorCrashHandler(err)
+	}
+
+	parser.LastToken = parser.CurrentToken
+	parser.CurrentToken = token
+}
+func (parser *Parser) PeekOneCharToken() {
+	token, err := parser.Lexer.GetNextToken(false)
 	if err != nil {
 		CoralErrorCrashHandler(err)
 	}

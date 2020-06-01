@@ -230,7 +230,7 @@ func (it *ArrayLit) OperandNodeType() int {
 
 // 字典元素
 type MapElement struct {
-	Key   Expression
+	Key   *Identifier
 	Value Expression
 }
 
