@@ -44,6 +44,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if eachStatement := parser.ParseEachStatement(); eachStatement != nil {
 		return eachStatement
 	}
+	if fnStatement := parser.ParseFnStatement(); fnStatement != nil {
+		return fnStatement
+	}
 
 	return nil
 }
@@ -230,6 +233,8 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 		parser.PeekNextToken() // 移过 'return'
 
 		if expressionList := parser.ParseExpressionList(); expressionList != nil {
+			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate a return statement!")
 			return &ReturnStatement{
 				Token:      returnToken,
 				Expression: expressionList,
@@ -252,7 +257,7 @@ func (parser *Parser) ParseImportElement() *ImportElement {
 		}
 		if parser.MatchCurrentTokenType(TokenTypeAs) {
 			parser.PeekNextToken() // 移过 'as'
-			if asName := parser.ParseIdentifier(); asName != nil {
+			if asName := parser.ParseIdentifier(false); asName != nil {
 				importElement.As = asName
 				return importElement
 			} else {
@@ -368,7 +373,7 @@ func (parser *Parser) ParseEnumElement() *EnumElement {
 func (parser *Parser) ParseEnumStatement() *EnumStatement {
 	if parser.MatchCurrentTokenType(TokenTypeEnum) {
 		parser.PeekNextToken() // 移过 'enum'
-		if enumName := parser.ParseIdentifier(); enumName != nil {
+		if enumName := parser.ParseIdentifier(false); enumName != nil {
 			enumStatement := new(EnumStatement)
 			enumStatement.Name = enumName
 
@@ -406,15 +411,16 @@ func (parser *Parser) ParseBlockStatement() *BlockStatement {
 		blockStatement := new(BlockStatement)
 		for stmt := parser.ParseStatement(); stmt != nil; stmt = parser.ParseStatement() {
 			blockStatement.Statements = append(blockStatement.Statements, stmt)
-			if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
-				parser.PeekNextToken()
-				return blockStatement
-			}
 		}
 
-		// 能结束循环到此处说明有问题、没有正常解析到右括号
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-			"expected a right brace as ending for block statement!", ParsingUnexpected))
+		if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+			parser.PeekNextToken()
+			return blockStatement
+		} else {
+			// 没有正常解析到右括号
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				"expected a right brace as ending for block statement!", ParsingUnexpected))
+		}
 	}
 
 	return nil
@@ -675,12 +681,12 @@ func (parser *Parser) ParseEachStatement() *EachStatement {
 		parser.PeekNextToken() // 移过 'each'
 		eachStatement := new(EachStatement)
 
-		if elementId := parser.ParseIdentifier(); elementId != nil {
+		if elementId := parser.ParseIdentifier(false); elementId != nil {
 			eachStatement.Element = elementId
 
 			if parser.MatchCurrentTokenType(TokenTypeComma) {
 				parser.PeekNextToken() // 移过 ','
-				if keyId := parser.ParseIdentifier(); keyId != nil {
+				if keyId := parser.ParseIdentifier(false); keyId != nil {
 					eachStatement.Key = keyId
 				}
 			} // 没有 key Identifier 也不算错
@@ -709,6 +715,141 @@ func (parser *Parser) ParseEachStatement() *EachStatement {
 		} else {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
 				"expected at least one identifier for \"each\" iteration loop!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseArgument() *Argument {
+	if argName := parser.ParseIdentifier(false); argName != nil {
+		argument := new(Argument)
+		argument.Name = argName
+
+		if argType := parser.ParseTypeDescription(); argType != nil {
+			argument.Type = argType
+			return argument
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				fmt.Sprintf("expected a type description for argument '%s'!", argName.Token.Str), ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseArgumentList() []*Argument {
+	var argList []*Argument
+	for arg := parser.ParseArgument(); arg != nil; arg = parser.ParseArgument() {
+		argList = append(argList, arg)
+		if parser.MatchCurrentTokenType(TokenTypeComma) {
+			parser.PeekNextToken() // 移过 ','
+		} else {
+			break
+		}
+	}
+
+	return argList
+}
+
+func (parser *Parser) ParseReturnList() []TypeDescription {
+	var returnList []TypeDescription
+	for returnType := parser.ParseTypeDescription(); returnType != nil; returnType = parser.ParseTypeDescription() {
+		returnList = append(returnList, returnType)
+		if parser.MatchCurrentTokenType(TokenTypeComma) {
+			parser.PeekNextToken() // 移过 ','
+		} else {
+			break
+		}
+	}
+	return returnList
+}
+
+func (parser *Parser) ParseSignature() *Signature {
+	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
+		parser.PeekNextToken() // 移过左括号
+		signature := new(Signature)
+		signature.Arguments = parser.ParseArgumentList()
+		parser.AssertCurrentTokenIs(TokenTypeRightParen, "a right parenthesis",
+			"in the function signature!")
+		signature.Returns = parser.ParseReturnList()
+
+		return signature
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseGenericsArgElement() *GenericsArgElement {
+	if argName := parser.ParseIdentifier(true); argName != nil {
+		argElement := new(GenericsArgElement)
+		argElement.ArgName = argName
+
+		if argGenerics := parser.ParseGenericsArgs(); argGenerics != nil {
+			argElement.Generics = argGenerics
+		} // 也可能只是通配符 而不是其他泛型类
+
+		return argElement
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseGenericsArgs() *GenericArgs {
+	if parser.MatchCurrentTokenType(TokenTypeLeftAngle) {
+		parser.PeekNextTokenAvoidAngleConfusing() // 移过 '<'
+		genericsArg := new(GenericArgs)
+
+		for element := parser.ParseGenericsArgElement(); element != nil; element = parser.ParseGenericsArgElement() {
+			genericsArg.Args = append(genericsArg.Args, element)
+
+			if parser.MatchCurrentTokenType(TokenTypeComma) {
+				parser.PeekNextTokenAvoidAngleConfusing() // 移过 ','
+				if parser.MatchCurrentTokenType(TokenTypeRightAngle) {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						"generics arguments can't be end with a comma!", ParsingUnexpected))
+				} // 不允许出现 <T,K,>
+			} else {
+				break
+			}
+		}
+
+		parser.AssertCurrentTokenIs(TokenTypeRightAngle, "a right angle",
+			"to terminate a generics arguments!")
+		return genericsArg
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseFnStatement() *FunctionDeclarationStatement {
+	if parser.MatchCurrentTokenType(TokenTypeFn) {
+		parser.PeekNextToken() // 移过 'fn'
+		fnStmt := new(FunctionDeclarationStatement)
+
+		if fnName := parser.ParseIdentifier(true); fnName != nil {
+			// 取 Identifier 结束后，GetNextToken 时避免读取 << 导致词法解析错误
+			// avoidAngleConfusing 这个项不会影响到其他类型 Token 的解析，只是于尖括号的解析相关
+			fnStmt.Name = fnName
+
+			if fnGenerics := parser.ParseGenericsArgs(); fnGenerics != nil {
+				fnStmt.Generics = fnGenerics
+			} // 函数也可能没有泛型参数
+
+			if signature := parser.ParseSignature(); signature != nil {
+				fnStmt.Signature = signature
+
+				if fnBlock := parser.ParseBlockStatement(); fnBlock != nil {
+					fnStmt.Block = fnBlock
+					return fnStmt
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						"expected a block when defining a function statement!", ParsingUnexpected))
+				}
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					"expected a signature when defining a function statement!", ParsingUnexpected))
+			}
 		}
 	}
 

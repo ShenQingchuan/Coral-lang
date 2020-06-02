@@ -46,13 +46,17 @@ func GetBinaryOperatorPriority(token *Token) int {
 	return 99 // 返回一个极大值表示无优先级
 }
 
-func (parser *Parser) ParseIdentifier() *Identifier {
+func (parser *Parser) ParseIdentifier(avoidAngleConfusingLater bool) *Identifier {
 	if !parser.MatchCurrentTokenType(TokenTypeIdentifier) {
 		return nil
 	}
 
 	identifier := &Identifier{Token: parser.CurrentToken} // 以当前标识符为 operand
-	parser.PeekNextToken()
+	if avoidAngleConfusingLater {
+		parser.PeekNextTokenAvoidAngleConfusing()
+	} else {
+		parser.PeekNextToken()
+	}
 	return identifier
 }
 
@@ -345,7 +349,7 @@ func (parser *Parser) ParseOperandName() *OperandName {
 
 	// 先添加传入的 token，已确定其为 identifier
 	operandName := new(OperandName)
-	identifier := parser.ParseIdentifier()
+	identifier := parser.ParseIdentifier(false)
 	operandName.Name = identifier
 
 	return operandName

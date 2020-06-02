@@ -289,7 +289,7 @@ func TestSkipLineComment(t *testing.T) {
   val
 	`)
 
-	gotToken, err := testLexer.GetNextToken(true)
+	gotToken, err := testLexer.GetNextToken(false)
 	if err != nil {
 		CoralErrorCrashHandler(err)
 	}
@@ -308,7 +308,7 @@ func TestSkipBlockComment(t *testing.T) {
   import
 	`)
 
-	gotToken, err := testLexer.GetNextToken(true)
+	gotToken, err := testLexer.GetNextToken(false)
 	if err != nil {
 		CoralErrorCrashHandler(err)
 	}
@@ -323,7 +323,7 @@ func TestUnclosedException(t *testing.T) {
 
 	Convey("测试括号未匹配报错：", t, func() {
 		count := 0
-		for _, err := testLexer.GetNextToken(true); count < 8; _, err = testLexer.GetNextToken(true) {
+		for _, err := testLexer.GetNextToken(false); count < 8; _, err = testLexer.GetNextToken(false) {
 			if count == 7 {
 				// 此时已经到达 BytePos 的末尾，但是圆括号仍未关闭完全
 				So(err.ErrEnum, ShouldEqual, LexParenthesesUnclosed)
@@ -392,7 +392,7 @@ func TestGetNextToken(t *testing.T) {
 
 	Convey("测试读入 GetToken 流：", t, func() {
 		for _, t := range expectedTokens {
-			gotToken, err := testLexer.GetNextToken(true)
+			gotToken, err := testLexer.GetNextToken(false)
 			if err != nil {
 				CoralErrorCrashHandler(err)
 			}

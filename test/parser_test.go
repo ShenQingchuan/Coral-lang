@@ -101,7 +101,7 @@ func TestCastExpression(t *testing.T) {
 		castExpression, isCast := parser.ParseExpression().(*CastExpression)
 		So(isCast, ShouldEqual, true)
 
-		So(castExpression.Type.(*TypeName).GetFullName(), ShouldEqual, "float64")
+		So(castExpression.Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "float64")
 		So(castExpression.Source.(*BasicPrimaryExpression).It.(*FloatLit).Value.Str, ShouldEqual,
 			"3.1415")
 		So(castExpression.Source.(*BasicPrimaryExpression).It.(*FloatLit).Accuracy, ShouldEqual,
@@ -237,7 +237,7 @@ func TestVarValDeclarationStatement(t *testing.T) {
 		So(varDeclStatement.Mutable, ShouldEqual, true)
 		So(varDeclStatement.Declarations[0].VarName.Str, ShouldEqual,
 			"a")
-		So(varDeclStatement.Declarations[0].Type.(*TypeName).GetFullName(), ShouldEqual,
+		So(varDeclStatement.Declarations[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual,
 			"int")
 		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"6")
@@ -303,7 +303,7 @@ func TestNewInstanceExpression(t *testing.T) {
 		newInstanceExpression, isNewInstance := parser.ParseExpression().(*NewInstanceExpression)
 		So(isNewInstance, ShouldEqual, true)
 		So(newInstanceExpression, ShouldNotEqual, nil)
-		So(newInstanceExpression.Class.(*TypeName).GetFullName(),
+		So(newInstanceExpression.Class.(*TypeName).Identifier.Token.Str,
 			ShouldEqual, "Student")
 		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str,
 			ShouldEqual, "Peter")
@@ -319,9 +319,9 @@ func TestNewInstanceExpression(t *testing.T) {
 		newInstanceExpression, isNewInstance := parser.ParseExpression().(*NewInstanceExpression)
 		So(isNewInstance, ShouldEqual, true)
 		So(newInstanceExpression, ShouldNotEqual, nil)
-		So(newInstanceExpression.Class.(*GenericsTypeLit).BasicType.GetFullName(),
+		So(newInstanceExpression.Class.(*GenericsTypeLit).BasicType.Identifier.Token.Str,
 			ShouldEqual, "Array")
-		So(newInstanceExpression.Class.(*GenericsTypeLit).GenericsArgs[0].GetFullName(),
+		So(newInstanceExpression.Class.(*GenericsTypeLit).GenericsArgs[0].(*TypeName).Identifier.Token.Str,
 			ShouldEqual, "string")
 		So(newInstanceExpression.InitParams[0].(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "3")
@@ -657,5 +657,54 @@ func TestEachStatement(t *testing.T) {
 		So(eachStatement.Element.Token.Str, ShouldEqual, "num")
 		So(eachStatement.Key.Token.Str, ShouldEqual, "i")
 		So(len(eachStatement.Target.(*BasicPrimaryExpression).It.(*ArrayLit).ValueList), ShouldEqual, 4)
+	})
+}
+func TestFnStatement(t *testing.T) {
+	Convey("测试函数定义语句：1", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `fn fibonacci(n int) int {
+        var a = n % 2, b = 1;
+        for var i = 0; i < n/2; i++ {
+            a += b;
+            b += a;
+        }
+
+        return a;
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "fn")
+
+		fnStatement, isFn := parser.ParseStatement().(*FunctionDeclarationStatement)
+		So(isFn, ShouldEqual, true)
+
+		So(fnStatement.Name.Token.Str, ShouldEqual, "fibonacci")
+		So(fnStatement.Signature.Arguments[0].Name.Token.Str, ShouldEqual, "n")
+		So(fnStatement.Signature.Arguments[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "int")
+		So(fnStatement.Signature.Returns[0].(*TypeName).Identifier.Token.Str, ShouldEqual, "int")
+	})
+
+	Convey("测试函数定义语句：2", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `fn initMapWIthAPair<T, K>(n1 T, n2 K) Map<T, K>, bool {
+			return new Map(n1, n2), true;
+		}`)
+		So(parser.CurrentToken.Str, ShouldEqual, "fn")
+
+		fnStatement, isFn := parser.ParseStatement().(*FunctionDeclarationStatement)
+		So(isFn, ShouldEqual, true)
+
+		So(fnStatement.Name.Token.Str, ShouldEqual, "initMapWIthAPair")
+		So(fnStatement.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+		So(fnStatement.Generics.Args[1].ArgName.Token.Str, ShouldEqual, "K")
+		So(fnStatement.Signature.Arguments[0].Name.Token.Str, ShouldEqual, "n1")
+		So(fnStatement.Signature.Arguments[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "T")
+		So(fnStatement.Signature.Arguments[1].Name.Token.Str, ShouldEqual, "n2")
+		So(fnStatement.Signature.Arguments[1].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "K")
+		So(fnStatement.Signature.Returns[0].(*GenericsTypeLit).BasicType.Identifier.Token.Str, ShouldEqual,
+			"Map")
+		So(fnStatement.Signature.Returns[0].(*GenericsTypeLit).GenericsArgs[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"T")
+		So(fnStatement.Signature.Returns[0].(*GenericsTypeLit).GenericsArgs[1].(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"K")
+		So(fnStatement.Signature.Returns[1].(*TypeName).Identifier.Token.Str, ShouldEqual, "bool")
 	})
 }

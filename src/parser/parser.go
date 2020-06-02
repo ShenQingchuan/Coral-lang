@@ -59,7 +59,7 @@ func (parser *Parser) PeekNextToken() {
 	parser.LastToken = parser.CurrentToken
 	parser.CurrentToken = token
 }
-func (parser *Parser) PeekOneCharToken() {
+func (parser *Parser) PeekNextTokenAvoidAngleConfusing() {
 	token, err := parser.Lexer.GetNextToken(false)
 	if err != nil {
 		CoralErrorCrashHandler(err)

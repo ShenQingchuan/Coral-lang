@@ -386,7 +386,7 @@ func (it *EachStatement) StatementNodeType() int {
 // 函数形参节点
 type Argument struct {
 	Name *Identifier
-	Type *TypeDescription
+	Type TypeDescription
 }
 
 func (it *Argument) NodeType() string {
@@ -396,16 +396,15 @@ func (it *Argument) NodeType() string {
 // 函数签名
 type Signature struct {
 	Arguments []*Argument
-	Returns   []*TypeDescription
+	Returns   []TypeDescription
 }
 
 func (it *Signature) NodeType() string {
 	return "Signature"
 }
 
-// 函数定义节点
+// 函数定义语句
 type FunctionDeclarationStatement struct {
-	Keyword   *Token
 	Name      *Identifier
 	Generics  *GenericArgs
 	Signature *Signature
@@ -451,20 +450,22 @@ func (it *ClassMemberMethod) ClassMemberNodeType() int {
 	return ClassMemberTypeMethod
 }
 
+type GenericsArgElement struct {
+	ArgName  *Identifier
+	Generics *GenericArgs
+}
+
+func (it *GenericsArgElement) NodeType() string {
+	return "Generics_Element"
+}
+
 // 泛型参数列表
 type GenericArgs struct {
-	Args []*Identifier
+	Args []*GenericsArgElement
 }
 
 func (it *GenericArgs) NodeType() string {
-	var args string
-	for i, id := range it.Args {
-		args += id.Token.Str
-		if i != len(it.Args)-1 {
-			args += ","
-		}
-	}
-	return "Generics_Arguments: <" + args + ">"
+	return "Generics_Arguments"
 }
 
 // 类定义语句节点

@@ -39,19 +39,19 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 			if parser.MatchCurrentTokenType(TokenTypeLeftAngle) {
 				genericsTypeLit := new(GenericsTypeLit)
 				genericsTypeLit.BasicType = typeName
+				parser.PeekNextTokenAvoidAngleConfusing() // 越过 '<'
 
-				parser.PeekNextToken() // 越过 '<'
 				for {
-					genericsArg := parser.ParseTypeName()
-					if genericsArg != nil {
-						genericsTypeLit.GenericsArgs = append(genericsTypeLit.GenericsArgs, genericsArg)
+					genericsLitElement := parser.ParseTypeDescription()
+					if genericsLitElement != nil {
+						genericsTypeLit.GenericsArgs = append(genericsTypeLit.GenericsArgs, genericsLitElement)
 					}
 					if parser.MatchCurrentTokenType(TokenTypeRightAngle) {
-						parser.PeekNextToken() // 移过 '>'
-						return genericsTypeLit // 结束泛型参数解析
+						parser.PeekNextTokenAvoidAngleConfusing() // 移过 '>'
+						return genericsTypeLit                    // 结束泛型参数解析
 					} else {
 						parser.AssertCurrentTokenIs(TokenTypeComma, "a comma", fmt.Sprintf(
-							"for seperating generics arguments but got '%s'",
+							"to seperate several generics arguments but got '%s'",
 							parser.CurrentToken.Str))
 					}
 				}
@@ -66,14 +66,10 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 }
 
 func (parser *Parser) ParseTypeName() *TypeName {
-	if !parser.MatchCurrentTokenType(TokenTypeIdentifier) {
-		return nil
+	if typeNameId := parser.ParseIdentifier(false); typeNameId != nil {
+		typeName := &TypeName{Identifier: typeNameId}
+		return typeName
 	}
 
-	// 先添加传入的 token，已确定其为 identifier
-	typeName := new(TypeName)
-	identifierList := parser.ParseIdentifierList()
-	typeName.NameList = identifierList
-
-	return typeName
+	return nil
 }

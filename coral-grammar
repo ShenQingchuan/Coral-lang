@@ -93,7 +93,7 @@ continueStmt ::= 'continue' ';'
 returnStmt ::= 'return' expressionList? ';'
 mixAssignOperator ::= ('+' | '-' | '|' | '^' | '*' | '/' | '%' | '<<' | '>>' | '&') '='
 assignStmt ::= (primaryExpressionList '=' expressionList) ';'
-typeName ::= IDENTIFIER ('.' IDENTIFIER)*
+typeName ::= IDENTIFIER
 typeDescription ::= ('[' typeDescription ']') | (typeName ('<' typeName (',' typeName)* '>')? )
 variableDeclElement ::= IDENTIFIER (typeDescription | (typeDescription? '=' expression))
 variableDeclStmt ::= ('var' | 'val') variableDeclElement (',' variableDeclElement)* ';'
@@ -181,7 +181,7 @@ argument ::= IDENTIFIER typeDescription
 argumentList ::= argument (',' argument)*
 resultList ::= typeDescription (',' typeDescription)*
 signature ::= '(' argumentList* ')' resultList?
-functionDeclaration ::= 'fn' IDENTIFIER signature blockStmt
+functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
 
 /* classStmt Example:
     class VideoDisk<T> : Disk <- Playable {
@@ -209,7 +209,8 @@ functionDeclaration ::= 'fn' IDENTIFIER signature blockStmt
 scopeKeyword ::= 'public' | 'private' | 'protected'
 classMemberVariable ::= scopeKeyword variableDeclStmt
 classMemberMethod ::= scopeKeyword functionDeclaration
-genericsArgs ::= '<' IDENTIFIER (',' IDENTIFIER)* '>'
+genericsArgElement ::= IDENTIFIER (genericsArgs)?
+genericsArgs ::= '<' genericsArgElement (',' genericsArgElement)* '>'
 classDeclaration ::= 'class' IDENTIFIER genericsArgs ':' IDENTIFIER '{' (classMemberVariable | classMemberMethod)* '}'
 
 /* tryCatchStmt Example:

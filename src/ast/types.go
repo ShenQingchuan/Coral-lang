@@ -15,21 +15,11 @@ type TypeDescription interface {
 
 // 类型的名称节点
 type TypeName struct {
-	NameList []*Identifier
+	Identifier *Identifier
 }
 
-func (it *TypeName) GetFullName() string {
-	var typeName string
-	for i, id := range it.NameList {
-		typeName += id.Token.Str
-		if i != len(it.NameList)-1 {
-			typeName += "."
-		}
-	}
-	return typeName
-}
 func (it *TypeName) NodeType() string {
-	return "Type_Name: " + it.GetFullName()
+	return "Type_Name"
 }
 func (it *TypeName) TypeDescriptionNode() int {
 	return TypeDescriptionTypeName
@@ -50,7 +40,7 @@ func (it *ArrayTypeLit) TypeDescriptionNode() int {
 // 带泛型参数的标识 eg: A<B,C>
 type GenericsTypeLit struct {
 	BasicType    *TypeName
-	GenericsArgs []*TypeName
+	GenericsArgs []TypeDescription
 }
 
 func (it *GenericsTypeLit) NodeType() string {
