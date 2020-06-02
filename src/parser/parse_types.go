@@ -2,35 +2,11 @@ package parser
 
 import (
 	. "coral-lang/src/ast"
-	. "coral-lang/src/exception"
 	. "coral-lang/src/lexer"
 	"fmt"
 )
 
 func (parser *Parser) ParseTypeDescription() TypeDescription {
-	// 如果是左中括号
-	if parser.MatchCurrentTokenType(TokenTypeLeftBracket) {
-		parser.PeekNextToken()
-		typeDescription := parser.ParseTypeDescription()
-		if typeDescription != nil {
-			arrayTypeLit := new(ArrayTypeLit)
-			arrayTypeLit.ElementType = &typeDescription
-
-			// 此时当前 token 应为 ']'
-			if parser.MatchCurrentTokenType(TokenTypeRightBracket) {
-				return arrayTypeLit
-			} else {
-				CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
-					fmt.Sprintf("expected a right bracket for type literal but got '%s'", parser.CurrentToken.Str),
-					ParsingUnexpected))
-			}
-		} else {
-			CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
-				fmt.Sprintf("expected a type description but got '%s'", parser.CurrentToken.Str),
-				ParsingUnexpected))
-		}
-	}
-
 	// 如果是 identifier 说明可能是 GenericsLit
 	if parser.MatchCurrentTokenType(TokenTypeIdentifier) {
 		typeName := parser.ParseTypeName()
@@ -55,6 +31,13 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 							parser.CurrentToken.Str))
 					}
 				}
+			} else if parser.MatchCurrentTokenType(TokenTypeLeftBracket) {
+				parser.PeekNextToken() // 移过左中括号
+				arrayLit := new(ArrayTypeLit)
+				arrayLit.ElementType = typeName
+				parser.AssertCurrentTokenIs(TokenTypeRightBracket, "a right bracket",
+					"to terminate a array type descriptor!")
+				return arrayLit
 			} else {
 				// 否则就将 typeName 返回作为该 typeDescription
 				return typeName

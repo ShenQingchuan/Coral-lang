@@ -27,7 +27,7 @@ func (it *TypeName) TypeDescriptionNode() int {
 
 // 数组类型标识 eg: [T]
 type ArrayTypeLit struct {
-	ElementType *TypeDescription
+	ElementType TypeDescription
 }
 
 func (it *ArrayTypeLit) NodeType() string {

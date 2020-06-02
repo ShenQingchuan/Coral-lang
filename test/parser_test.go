@@ -228,7 +228,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 func TestVarValDeclarationStatement(t *testing.T) {
 	Convey("测试变量定义：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "var a int = 6;")
+		InitParserFromString(parser, "var a int[] = [6, 7, 11];")
 		So(parser.CurrentToken.Str, ShouldEqual, "var")
 
 		varDeclStatement, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
@@ -237,9 +237,9 @@ func TestVarValDeclarationStatement(t *testing.T) {
 		So(varDeclStatement.Mutable, ShouldEqual, true)
 		So(varDeclStatement.Declarations[0].VarName.Str, ShouldEqual,
 			"a")
-		So(varDeclStatement.Declarations[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual,
+		So(varDeclStatement.Declarations[0].Type.(*ArrayTypeLit).ElementType.(*TypeName).Identifier.Token.Str, ShouldEqual,
 			"int")
-		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
+		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*ArrayLit).ValueList[0].(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"6")
 	})
 
@@ -684,7 +684,7 @@ func TestFnStatement(t *testing.T) {
 
 	Convey("测试函数定义语句：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `fn initMapWIthAPair<T, K>(n1 T, n2 K) Map<T, K>, bool {
+		InitParserFromString(parser, `fn initMapWithAPair<T, K>(n1 T, n2 K) Map<T, K>, bool {
 			return new Map(n1, n2), true;
 		}`)
 		So(parser.CurrentToken.Str, ShouldEqual, "fn")
@@ -692,7 +692,7 @@ func TestFnStatement(t *testing.T) {
 		fnStatement, isFn := parser.ParseStatement().(*FunctionDeclarationStatement)
 		So(isFn, ShouldEqual, true)
 
-		So(fnStatement.Name.Token.Str, ShouldEqual, "initMapWIthAPair")
+		So(fnStatement.Name.Token.Str, ShouldEqual, "initMapWithAPair")
 		So(fnStatement.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
 		So(fnStatement.Generics.Args[1].ArgName.Token.Str, ShouldEqual, "K")
 		So(fnStatement.Signature.Arguments[0].Name.Token.Str, ShouldEqual, "n1")
