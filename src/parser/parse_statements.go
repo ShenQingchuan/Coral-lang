@@ -158,7 +158,7 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 					return varDeclElement
 				} else {
 					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-						fmt.Sprintf("expected an expression as initial value to type inferring"+
+						fmt.Sprintf("expected an expression as initial value to type inferring "+
 							"for the non-typed variable '%s'!", varNameToken.Str),
 						ParsingUnexpected))
 				}
@@ -765,12 +765,12 @@ func (parser *Parser) ParseReturnList() []TypeDescription {
 	return returnList
 }
 
-func (parser *Parser) ParseSignature() *Signature {
-	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
+func (parser *Parser) ParseSignature(startTokenTYpe TokenType, endTokenType TokenType) *Signature {
+	if parser.MatchCurrentTokenType(startTokenTYpe) {
 		parser.PeekNextToken() // 移过左括号
 		signature := new(Signature)
 		signature.Arguments = parser.ParseArgumentList()
-		parser.AssertCurrentTokenIs(TokenTypeRightParen, "a right parenthesis",
+		parser.AssertCurrentTokenIs(endTokenType, "a right parenthesis",
 			"in the function signature!")
 		signature.Returns = parser.ParseReturnList()
 
@@ -836,7 +836,7 @@ func (parser *Parser) ParseFnStatement() *FunctionDeclarationStatement {
 				fnStmt.Generics = fnGenerics
 			} // 函数也可能没有泛型参数
 
-			if signature := parser.ParseSignature(); signature != nil {
+			if signature := parser.ParseSignature(TokenTypeLeftParen, TokenTypeRightParen); signature != nil {
 				fnStmt.Signature = signature
 
 				if fnBlock := parser.ParseBlockStatement(); fnBlock != nil {

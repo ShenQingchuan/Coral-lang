@@ -52,7 +52,7 @@ stringLit ::= '"' (~["\\] | escapeValue)*  '"'
 arrayLit ::= '[' expressionList? ']'
 tableElement ::= IDENTIFIER ':' expression
 tableLit ::= '{' tableElement (',' tableElement)* '}'
-lambdaLit ::= '(' (IDENTIFIER (',' IDENTIFIER)*)? ')' (':' resultList)? '->' blockStmt
+lambdaLit ::= ('|' signature '|' '->' blockStmt)
 literal
     ::= nilLit
     | trueLit

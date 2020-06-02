@@ -91,7 +91,7 @@ func (parser *Parser) ParseExpression() Expression {
 		inParenExpression := parser.ParseExpression()
 		parser.AssertCurrentTokenIs(TokenTypeRightParen,
 			"right parenthesis", "to close a parenthesis expression!")
-		return inParenExpression
+		return parser.TryParseBinaryExpression(inParenExpression)
 	}
 
 	if unaryExpression := parser.ParseUnaryExpression(); unaryExpression != nil {
@@ -338,6 +338,25 @@ func (parser *Parser) ParseLiteral() Literal {
 		parser.AssertCurrentTokenIs(TokenTypeRightBrace, "right brace",
 			"in map literal definition!")
 		return &TableLit{KeyValueList: elements}
+	case TokenTypeVertical:
+		if signature := parser.ParseSignature(TokenTypeVertical, TokenTypeVertical); signature != nil {
+			lambdaLit := new(LambdaLit)
+			lambdaLit.Signature = signature
+			if parser.MatchCurrentTokenType(TokenTypeRightArrow) {
+				parser.PeekNextToken() // 移过尖头
+				if lambdaBlock := parser.ParseBlockStatement(); lambdaBlock != nil {
+					lambdaLit.Block = lambdaBlock
+					return lambdaLit
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						"expected a block for lambda lambda function!", ParsingUnexpected))
+				}
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					"expected a right arrow '->' for lambda function!", ParsingUnexpected))
+			}
+		}
+		return nil
 	}
 }
 

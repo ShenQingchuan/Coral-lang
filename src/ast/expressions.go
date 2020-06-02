@@ -256,8 +256,7 @@ func (it *TableLit) OperandNodeType() int {
 
 // 箭头函数
 type LambdaLit struct {
-	Literal
-	Arguments []Expression
+	Signature *Signature
 	Block     *BlockStatement
 }
 

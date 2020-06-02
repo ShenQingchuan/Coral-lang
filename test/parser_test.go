@@ -68,6 +68,23 @@ func TestParseLiteral(t *testing.T) {
 		_, isMemberExpr := tableLit.KeyValueList[1].Value.(*MemberExpression)
 		So(isMemberExpr, ShouldEqual, true)
 	})
+
+	Convey("测试解析字面量值：lambda", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `var a = |m int, n int| float -> {
+			println((m+n) * 2);
+		};`)
+		So(parser.CurrentToken.Str, ShouldEqual, "var")
+
+		lambdaVar, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
+		So(isVarDecl, ShouldEqual, true)
+		So(lambdaVar.Mutable, ShouldEqual, true)
+		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "int")
+		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str, ShouldEqual, "m")
+		So(lambdaVar.Declarations[0].VarName.Str, ShouldEqual, "a")
+		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Returns[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"float")
+	})
 }
 func TestBinaryExpression(t *testing.T) {
 	Convey("测试二元表达式：", t, func() {
