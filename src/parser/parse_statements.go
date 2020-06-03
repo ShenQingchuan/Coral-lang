@@ -53,6 +53,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if interfaceStatement := parser.ParseInterfaceStatement(); interfaceStatement != nil {
 		return interfaceStatement
 	}
+	if tryCatchStatement := parser.ParseTryCatchStatement(); tryCatchStatement != nil {
+		return tryCatchStatement
+	}
 
 	return nil
 }
@@ -1083,6 +1086,75 @@ func (parser *Parser) ParseInterfaceStatement() *InterfaceDeclarationStatement {
 		} else {
 			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
 				"expected an class identifier for interface name!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseErrorCatchHandler() *ErrorCatchHandler {
+	if parser.MatchCurrentTokenType(TokenTypeCatch) {
+		parser.PeekNextToken() // 移过 'catch'
+		errHandler := new(ErrorCatchHandler)
+
+		if errId := parser.ParseIdentifier(false); errId != nil {
+			errHandler.Name = errId
+
+			if errType := parser.ParseTypeDescription(); errType != nil {
+				errHandler.ErrorType = errType
+
+				if handleBlock := parser.ParseBlockStatement(); handleBlock != nil {
+					errHandler.Handler = handleBlock
+
+					return errHandler
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						fmt.Sprintf("expected a block as handler for exception \"%s\"!", errId.Token.Str),
+						ParsingUnexpected))
+				}
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					fmt.Sprintf("expected a type descriptor for exception \"%s\"!", errId.Token.Str),
+					ParsingUnexpected))
+			}
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				"expected an identifier for exception name after keyword \"catch\"!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseTryCatchStatement() *TryCatchStatement {
+	if parser.MatchCurrentTokenType(TokenTypeTry) {
+		parser.PeekNextToken() // 移过 'try'
+		tryCatchStmt := new(TryCatchStatement)
+
+		if tryBlock := parser.ParseBlockStatement(); tryBlock != nil {
+			tryCatchStmt.TryBlock = tryBlock
+
+			for errHandler := parser.ParseErrorCatchHandler(); errHandler != nil; errHandler = parser.ParseErrorCatchHandler() {
+				tryCatchStmt.Handlers = append(tryCatchStmt.Handlers, errHandler)
+			}
+
+			if parser.MatchCurrentTokenType(TokenTypeFinally) {
+				parser.PeekNextToken() // 移过 'finally'
+				if finallyBlock := parser.ParseBlockStatement(); finallyBlock != nil {
+					tryCatchStmt.Finally = finallyBlock
+
+					return tryCatchStmt
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						fmt.Sprintf("expected a block after keyword \"finally\"!"),
+						ParsingUnexpected))
+				}
+			} // 也可能无 finally
+
+			return tryCatchStmt
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				"expected a block statement after keyword \"try\"!", ParsingUnexpected))
 		}
 	}
 

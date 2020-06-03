@@ -525,19 +525,20 @@ func (it *InterfaceDeclarationStatement) StatementNodeType() int {
 }
 
 // catch 错误捕获单元节点
-type ErrorCatchUnit struct {
-	Name    *Identifier
-	Handler *BlockStatement
+type ErrorCatchHandler struct {
+	Name      *Identifier
+	ErrorType TypeDescription
+	Handler   *BlockStatement
 }
 
-func (it *ErrorCatchUnit) NodeType() string {
-	return "Error_Catch_Unit"
+func (it *ErrorCatchHandler) NodeType() string {
+	return "Error_Catch_Handler"
 }
 
 // try/catch 异常捕获语句节点
 type TryCatchStatement struct {
 	TryBlock *BlockStatement
-	Handlers []*ErrorCatchUnit
+	Handlers []*ErrorCatchHandler
 	Finally  *BlockStatement
 }
 

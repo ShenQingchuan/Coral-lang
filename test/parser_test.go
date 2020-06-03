@@ -826,3 +826,35 @@ func TestInterfaceStatement(t *testing.T) {
 		So(interfaceStatement.Methods[0].Scope, ShouldEqual, ClassMemberScopePublic)
 	})
 }
+func TestTryCatchStatement(t *testing.T) {
+	Convey("测试接口定义语句：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `try {
+			val n = 3 / 0;
+    } catch e MathException {
+			println(e.message());
+    } catch e CCException {
+			println("Just test.");
+		} finally {
+      println("hahaha, it's ok");
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "try")
+
+		tryCatchStmt, isTryCatch := parser.ParseStatement().(*TryCatchStatement)
+		So(isTryCatch, ShouldEqual, true)
+
+		So(tryCatchStmt.TryBlock.Statements[0].(*VarDeclStatement).Mutable, ShouldEqual, false)
+		So(tryCatchStmt.TryBlock.Statements[0].(*VarDeclStatement).Declarations[0].VarName.Str, ShouldEqual, "n")
+		So(tryCatchStmt.TryBlock.Statements[0].(*VarDeclStatement).Declarations[0].InitValue.(*BinaryExpression).Operator.Kind,
+			ShouldEqual, TokenTypeSlash)
+
+		So(tryCatchStmt.Handlers[0].Name.Token.Str, ShouldEqual, "e")
+		So(tryCatchStmt.Handlers[0].ErrorType.(*TypeName).Identifier.Token.Str, ShouldEqual, "MathException")
+
+		So(tryCatchStmt.Handlers[1].Name.Token.Str, ShouldEqual, "e")
+		So(tryCatchStmt.Handlers[1].ErrorType.(*TypeName).Identifier.Token.Str, ShouldEqual, "CCException")
+
+		So(tryCatchStmt.Finally.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual, "println")
+		So(tryCatchStmt.Finally.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual, "hahaha, it's ok")
+	})
+}

@@ -220,4 +220,6 @@ interfaceDeclaration ::= 'interface' classIdentifier (':' classIdentifier)? '{' 
         println("hahaha, it's ok");
     }
 */
-tryCatchStmt ::= 'try' blockStmt ('catch' IDENTIFIER blockStmt)+ ('finally' blockStmt)?
+
+catchHandler ::= ('catch' IDENTIFIER typeDescriptor blockStmt)
+tryCatchStmt ::= 'try' blockStmt catchHandler+ ('finally' blockStmt)?
