@@ -37,7 +37,8 @@ const (
 	TokenTypeThis
 	TokenTypeSuper
 	TokenTypeStatic
-	TokenTypeInit
+	TokenTypePublic
+	TokenTypePrivate
 	TokenTypeNew
 	TokenTypeNil
 	TokenTypeTrue
@@ -45,6 +46,7 @@ const (
 	TokenTypeTry
 	TokenTypeCatch
 	TokenTypeFinally
+	TokenTypeThrows
 
 	TokenTypeSemi                  // ;
 	TokenTypeComma                 // ,
@@ -181,8 +183,9 @@ func InitLexerCommonOperations(lexer *Lexer) {
 		"interface": TokenTypeInterface,
 		"this":      TokenTypeThis,
 		"super":     TokenTypeSuper,
-		"init":      TokenTypeInit,
 		"static":    TokenTypeStatic,
+		"public":    TokenTypePublic,
+		"private":   TokenTypePrivate,
 		"new":       TokenTypeNew,
 		"nil":       TokenTypeNil,
 		"true":      TokenTypeTrue,
@@ -190,6 +193,7 @@ func InitLexerCommonOperations(lexer *Lexer) {
 		"try":       TokenTypeTry,
 		"catch":     TokenTypeCatch,
 		"finally":   TokenTypeFinally,
+		"throws":    TokenTypeThrows,
 	}
 }
 func InitLexerFromString(lexer *Lexer, content string) {

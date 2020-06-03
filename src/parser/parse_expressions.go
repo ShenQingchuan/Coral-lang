@@ -357,6 +357,18 @@ func (parser *Parser) ParseLiteral() Literal {
 			}
 		}
 		return nil
+	case TokenTypeThis:
+		defer parser.PeekNextToken()
+		return &ThisLit{
+			Token:     parser.CurrentToken,
+			BelongsTo: nil,
+		}
+	case TokenTypeSuper:
+		defer parser.PeekNextToken()
+		return &SuperLit{
+			Token:     parser.CurrentToken,
+			BelongsTo: nil,
+		}
 	}
 }
 

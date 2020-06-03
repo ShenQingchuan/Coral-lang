@@ -71,7 +71,8 @@ func TestParseLiteral(t *testing.T) {
 
 	Convey("测试解析字面量值：lambda", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `var a = |m int, n int| float -> {
+		InitParserFromString(parser, `
+		var a = |m int, n int| float -> {
 			println((m+n) * 2);
 		};`)
 		So(parser.CurrentToken.Str, ShouldEqual, "var")
@@ -701,7 +702,10 @@ func TestFnStatement(t *testing.T) {
 
 	Convey("测试函数定义语句：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `fn initMapWithAPair<T, K>(n1 T, n2 K) Map<T, K>, bool {
+		InitParserFromString(parser, `fn initMapWithAPair<T, K>(
+			n1 T, 
+			n2 K
+		) Map<T, K>, bool throws NullPointerException {
 			return new Map(n1, n2), true;
 		}`)
 		So(parser.CurrentToken.Str, ShouldEqual, "fn")
@@ -723,5 +727,102 @@ func TestFnStatement(t *testing.T) {
 		So(fnStatement.Signature.Returns[0].(*GenericsTypeLit).GenericsArgs[1].(*TypeName).Identifier.Token.Str, ShouldEqual,
 			"K")
 		So(fnStatement.Signature.Returns[1].(*TypeName).Identifier.Token.Str, ShouldEqual, "bool")
+		So(fnStatement.Signature.Throws[0].(*TypeName).Identifier.Token.Str, ShouldEqual, "NullPointerException")
+	})
+}
+func TestClassStatement(t *testing.T) {
+	Convey("测试类定义语句：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `class VideoDisk<T, K> : Disk<K> <- Playable<T> {
+        var time Date,
+						movieName string,
+        		movieDirector string,
+        		productionCompany string,
+						renter Customer;
+
+        var hasBeenRented bool = false;
+
+				fn VideoDisk(name string, director string, company string) {
+					this.movieName = name;
+					this.movieDirector = director;
+					this.productionCompany = company;
+				}
+
+        public fn rent(c Customer) {
+            this.renter = Customer;
+            this.hasBeenRented = true;
+        }
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "class")
+
+		classStatement, isClass := parser.ParseStatement().(*ClassDeclarationStatement)
+		So(isClass, ShouldEqual, true)
+
+		So(classStatement.Definition.Name.Token.Str, ShouldEqual, "VideoDisk")
+		So(classStatement.Definition.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+		So(classStatement.Definition.Generics.Args[1].ArgName.Token.Str, ShouldEqual, "K")
+
+		So(classStatement.Extends.Name.Token.Str, ShouldEqual, "Disk")
+		So(classStatement.Extends.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "K")
+
+		So(classStatement.Implements[0].Name.Token.Str, ShouldEqual, "Playable")
+		So(classStatement.Implements[0].Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[0].VarName.Str, ShouldEqual,
+			"time")
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"Date")
+
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[1].VarName.Str, ShouldEqual,
+			"movieName")
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[1].Type.(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"string")
+
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[2].VarName.Str, ShouldEqual,
+			"movieDirector")
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[2].Type.(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"string")
+
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[3].VarName.Str, ShouldEqual,
+			"productionCompany")
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[3].Type.(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"string")
+
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[4].VarName.Str, ShouldEqual,
+			"renter")
+		So(classStatement.Members[0].(*ClassMemberVar).VarDecl.Declarations[4].Type.(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"Customer")
+
+		So(classStatement.Members[3].(*ClassMemberMethod).MethodDecl.Name.Token.Str, ShouldEqual,
+			"rent")
+		So(classStatement.Members[3].(*ClassMemberMethod).Scope, ShouldEqual, ClassMemberScopePublic)
+	})
+}
+func TestInterfaceStatement(t *testing.T) {
+	Convey("测试接口定义语句：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `interface A<T> : B<T> {
+        public  fn cc<T>() string throws MMException;
+        private fn dd() int;
+    }`)
+		So(parser.CurrentToken.Str, ShouldEqual, "interface")
+
+		interfaceStatement, isInterface := parser.ParseStatement().(*InterfaceDeclarationStatement)
+		So(isInterface, ShouldEqual, true)
+
+		So(interfaceStatement.Definition.Name.Token.Str, ShouldEqual, "A")
+		So(interfaceStatement.Definition.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+
+		So(interfaceStatement.Extends.Name.Token.Str, ShouldEqual, "B")
+		So(interfaceStatement.Extends.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+
+		So(interfaceStatement.Methods[0].Name.Token.Str, ShouldEqual,
+			"cc")
+		So(interfaceStatement.Methods[0].Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+		So(interfaceStatement.Methods[0].Signature.Returns[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"string")
+		So(interfaceStatement.Methods[0].Signature.Throws[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"MMException")
+		So(interfaceStatement.Methods[0].Scope, ShouldEqual, ClassMemberScopePublic)
 	})
 }

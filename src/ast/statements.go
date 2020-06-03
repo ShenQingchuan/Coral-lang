@@ -18,6 +18,7 @@ const (
 	StatementTypeEach
 	StatementTypeFunctionDecl
 	StatementTypeClassDecl
+	StatementTypeInterfaceDecl
 )
 
 // 定义引入外部模块语句的种类来区分
@@ -45,6 +46,14 @@ const (
 	ClassMemberTypeVar = iota
 	ClassMemberTypeMethod
 )
+
+// 类成员的公开与否 枚举：
+const (
+	ClassMemberScopePrivate = iota
+	ClassMemberScopePublic
+)
+
+type ClassMemberScopeType int
 
 // 返回语句节点
 type ReturnStatement struct {
@@ -397,6 +406,7 @@ func (it *Argument) NodeType() string {
 type Signature struct {
 	Arguments []*Argument
 	Returns   []TypeDescription
+	Throws    []TypeDescription
 }
 
 func (it *Signature) NodeType() string {
@@ -426,12 +436,12 @@ type ClassMember interface {
 
 // 类成员变量定义节点
 type ClassMemberVar struct {
-	Scope   *Token
+	Scope   ClassMemberScopeType
 	VarDecl *VarDeclStatement
 }
 
 func (it *ClassMemberVar) NodeType() string {
-	return "Class_Member_Variable, scope: " + it.Scope.Str
+	return "Class_Member_Variable"
 }
 func (it *ClassMemberVar) ClassMemberNodeType() int {
 	return ClassMemberTypeVar
@@ -439,12 +449,12 @@ func (it *ClassMemberVar) ClassMemberNodeType() int {
 
 // 类成员方法定义节点
 type ClassMemberMethod struct {
-	Scope      *Token
+	Scope      ClassMemberScopeType
 	MethodDecl *FunctionDeclarationStatement
 }
 
 func (it *ClassMemberMethod) NodeType() string {
-	return "Class_Member_Method, scope: " + it.Scope.Str
+	return "Class_Member_Method"
 }
 func (it *ClassMemberMethod) ClassMemberNodeType() int {
 	return ClassMemberTypeMethod
@@ -468,12 +478,21 @@ func (it *GenericArgs) NodeType() string {
 	return "Generics_Arguments"
 }
 
-// 类定义语句节点
-type ClassDeclarationStatement struct {
+type ClassIdentifier struct {
 	Name     *Identifier
 	Generics *GenericArgs
-	Extends  *Identifier
-	Members  []*ClassMember
+}
+
+func (it *ClassIdentifier) NodeType() string {
+	return "Class_Identifier"
+}
+
+// 类定义语句节点
+type ClassDeclarationStatement struct {
+	Definition *ClassIdentifier
+	Extends    *ClassIdentifier
+	Implements []*ClassIdentifier
+	Members    []ClassMember
 }
 
 func (it *ClassDeclarationStatement) NodeType() string {
@@ -481,6 +500,28 @@ func (it *ClassDeclarationStatement) NodeType() string {
 }
 func (it *ClassDeclarationStatement) StatementNodeType() int {
 	return StatementTypeClassDecl
+}
+
+// 接口方法声明
+type InterfaceMethodDeclaration struct {
+	Scope     ClassMemberScopeType
+	Name      *Identifier
+	Generics  *GenericArgs
+	Signature *Signature
+}
+
+// 接口定义语句节点
+type InterfaceDeclarationStatement struct {
+	Definition *ClassIdentifier
+	Extends    *ClassIdentifier
+	Methods    []*InterfaceMethodDeclaration
+}
+
+func (it *InterfaceDeclarationStatement) NodeType() string {
+	return "Interface_Declaration_Statement"
+}
+func (it *InterfaceDeclarationStatement) StatementNodeType() int {
+	return StatementTypeInterfaceDecl
 }
 
 // catch 错误捕获单元节点

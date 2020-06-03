@@ -44,6 +44,8 @@ const (
 	LiteralNodeTypeArray
 	LiteralNodeTypeMap
 	LiteralNodeTypeLambda
+	LiteralNodeTypeThis
+	LiteralNodeTypeSuper
 )
 
 // ----- 各种字面量 ------
@@ -267,6 +269,38 @@ func (it *LambdaLit) LiteralNodeType() int {
 	return LiteralNodeTypeLambda
 }
 func (it *LambdaLit) OperandNodeType() int {
+	return OperandTypeLiteral
+}
+
+// 自指对象 this
+type ThisLit struct {
+	Token     *Token
+	BelongsTo *ClassIdentifier // 留给后续语义分析阶段的
+}
+
+func (it *ThisLit) NodeType() string {
+	return "This_Lit"
+}
+func (it *ThisLit) LiteralNodeType() int {
+	return LiteralNodeTypeThis
+}
+func (it *ThisLit) OperandNodeType() int {
+	return OperandTypeLiteral
+}
+
+// 父级对象 super
+type SuperLit struct {
+	Token     *Token
+	BelongsTo *ClassIdentifier // 留给后续语义分析阶段的
+}
+
+func (it *SuperLit) NodeType() string {
+	return "Super_Lit"
+}
+func (it *SuperLit) LiteralNodeType() int {
+	return LiteralNodeTypeSuper
+}
+func (it *SuperLit) OperandNodeType() int {
 	return OperandTypeLiteral
 }
 

@@ -47,6 +47,12 @@ func (parser *Parser) ParseStatement() Statement {
 	if fnStatement := parser.ParseFnStatement(); fnStatement != nil {
 		return fnStatement
 	}
+	if classStatement := parser.ParseClassStatement(); classStatement != nil {
+		return classStatement
+	}
+	if interfaceStatement := parser.ParseInterfaceStatement(); interfaceStatement != nil {
+		return interfaceStatement
+	}
 
 	return nil
 }
@@ -115,7 +121,7 @@ func (parser *Parser) ParseSimpleStatement(needSemiEnd bool) SimpleStatement {
 	return nil
 }
 
-func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
+func (parser *Parser) ParseVarDeclElement(mutable bool) *VarDeclElement {
 	if parser.MatchCurrentTokenType(TokenTypeIdentifier) {
 		varNameToken := parser.CurrentToken
 		varDeclElement := new(VarDeclElement)
@@ -140,34 +146,41 @@ func (parser *Parser) ParseVarDeclElement() *VarDeclElement {
 						ParsingUnexpected))
 				}
 
-			} else if parser.MatchCurrentTokenType(TokenTypeComma) {
-				// 那么一个变量定义元素可以结束了，不移过逗号 ',' 而等待外部断言
+			} else if parser.MatchCurrentTokenType(TokenTypeComma) || parser.MatchCurrentTokenType(TokenTypeSemi) {
+				// 此时即没有给出初始值
+				if !mutable {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						"no initial value for \"val\" declaration is not allowed!", ParsingUnexpected))
+				}
 				CoralCompileWarningWithPos(parser, fmt.Sprintf(`no initial value for variable: "%s".`, varNameToken.Str))
+				// 那么一个变量定义元素可以结束了，不移过逗号 ','、分号';' 而等待外部断言
+				return varDeclElement
+			}
+		}
+
+		// 无类型标注 -> 则当前 token 必须是等号、有初始值
+		if parser.MatchCurrentTokenType(TokenTypeEqual) {
+			parser.PeekNextToken() // 移过 '='
+			if initValue := parser.ParseExpression(); initValue != nil {
+				varDeclElement.InitValue = initValue
 				return varDeclElement
 			} else {
 				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-					fmt.Sprintf("unexpected token: '%s', incomplete variable declaration!", parser.CurrentToken.Str),
+					fmt.Sprintf("expected an expression as initial value to type inferring "+
+						"for the non-typed variable '%s'!", varNameToken.Str),
 					ParsingUnexpected))
 			}
 		} else {
-			// 无类型标注 -> 则当前 token 必须是等号、有初始值
-			if parser.MatchCurrentTokenType(TokenTypeEqual) {
-				parser.PeekNextToken() // 移过 '='
-				if initValue := parser.ParseExpression(); initValue != nil {
-					varDeclElement.InitValue = initValue
-					return varDeclElement
-				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-						fmt.Sprintf("expected an expression as initial value to type inferring "+
-							"for the non-typed variable '%s'!", varNameToken.Str),
-						ParsingUnexpected))
-				}
-			} else {
-				// 当前是其他不正确的 token
+			if varDeclElement.Type == nil && varDeclElement.InitValue == nil {
 				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-					fmt.Sprintf("unexpected token '%s' for variabel declaration!", parser.CurrentToken.Str),
+					"a variable initialized with neither a type descriptor nor a initial value is not allowed!",
 					ParsingUnexpected))
 			}
+
+			// 其他不正确的 token
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				fmt.Sprintf("unexpected token '%s' for variabel declaration!", parser.CurrentToken.Str),
+				ParsingUnexpected))
 		}
 	}
 
@@ -181,11 +194,7 @@ func (parser *Parser) ParseVarDeclStatement() *VarDeclStatement {
 		parser.PeekNextToken() // 移过 'var'/'val'
 
 		// 开始循环遍历读取 varDeclElement
-		for varDeclElement := parser.ParseVarDeclElement(); varDeclElement != nil; varDeclElement = parser.ParseVarDeclElement() {
-			if !varDeclStatement.Mutable && varDeclElement.InitValue == nil {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-					"no initial value for \"val\" declaration is not allowed!", ParsingUnexpected))
-			}
+		for varDeclElement := parser.ParseVarDeclElement(varDeclStatement.Mutable); varDeclElement != nil; varDeclElement = parser.ParseVarDeclElement(varDeclStatement.Mutable) {
 			varDeclStatement.Declarations = append(varDeclStatement.Declarations, varDeclElement)
 
 			if parser.MatchCurrentTokenType(TokenTypeSemi) {
@@ -765,14 +774,31 @@ func (parser *Parser) ParseReturnList() []TypeDescription {
 	return returnList
 }
 
-func (parser *Parser) ParseSignature(startTokenTYpe TokenType, endTokenType TokenType) *Signature {
-	if parser.MatchCurrentTokenType(startTokenTYpe) {
+func (parser *Parser) ParseSignature(startTokenType TokenType, endTokenType TokenType) *Signature {
+	if parser.MatchCurrentTokenType(startTokenType) {
 		parser.PeekNextToken() // 移过左括号
 		signature := new(Signature)
 		signature.Arguments = parser.ParseArgumentList()
 		parser.AssertCurrentTokenIs(endTokenType, "a right parenthesis",
 			"in the function signature!")
 		signature.Returns = parser.ParseReturnList()
+
+		if parser.MatchCurrentTokenType(TokenTypeThrows) {
+			parser.PeekNextTokenAvoidAngleConfusing() // 移过 'throws'
+
+			for exceptionType := parser.ParseTypeDescription(); exceptionType != nil; exceptionType = parser.ParseTypeDescription() {
+				signature.Throws = append(signature.Throws, exceptionType)
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextTokenAvoidAngleConfusing() // 移过 ','
+				} else {
+					break
+				}
+			}
+			if len(signature.Throws) == 0 {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					"expected the exceptions' type after keyword \"throws\"!", ParsingUnexpected))
+			}
+		}
 
 		return signature
 	}
@@ -850,6 +876,213 @@ func (parser *Parser) ParseFnStatement() *FunctionDeclarationStatement {
 				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
 					"expected a signature when defining a function statement!", ParsingUnexpected))
 			}
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseClassIdentifier() *ClassIdentifier {
+	if className := parser.ParseIdentifier(true); className != nil {
+		classIdentifier := new(ClassIdentifier)
+		classIdentifier.Name = className
+
+		if genericsArgs := parser.ParseGenericsArgs(); genericsArgs != nil {
+			classIdentifier.Generics = genericsArgs
+		} // 也可能没有泛型参数
+
+		return classIdentifier
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseClassMember() ClassMember {
+	var scopeType ClassMemberScopeType = ClassMemberScopePrivate
+	if parser.MatchCurrentTokenType(TokenTypePublic) {
+		scopeType = ClassMemberScopePublic
+		parser.PeekNextToken()
+	} else if parser.MatchCurrentTokenType(TokenTypePrivate) {
+		parser.PeekNextToken()
+	}
+	if memberVarDecl := parser.ParseVarDeclStatement(); memberVarDecl != nil {
+		parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+			"to terminate a class member variable declaration!")
+
+		classMemberVar := new(ClassMemberVar)
+		classMemberVar.Scope = scopeType
+		classMemberVar.VarDecl = memberVarDecl
+		return classMemberVar
+	} else if memberMethodDecl := parser.ParseFnStatement(); memberMethodDecl != nil {
+		classMemberMethod := new(ClassMemberMethod)
+		classMemberMethod.Scope = scopeType
+		classMemberMethod.MethodDecl = memberMethodDecl
+		return classMemberMethod
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseClassStatement() *ClassDeclarationStatement {
+	if parser.MatchCurrentTokenType(TokenTypeClass) {
+		parser.PeekNextTokenAvoidAngleConfusing() // 移过 'class'
+		classStmt := new(ClassDeclarationStatement)
+
+		if classId := parser.ParseClassIdentifier(); classId != nil {
+			classStmt.Definition = classId
+
+			if parser.MatchCurrentTokenType(TokenTypeColon) {
+				parser.PeekNextTokenAvoidAngleConfusing() // 移过 ':'
+				if extends := parser.ParseClassIdentifier(); extends != nil {
+					classStmt.Extends = extends
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						"expected an class identifier for extended class name!", ParsingUnexpected))
+				}
+			} // 也可能没有继承
+
+			if parser.MatchCurrentTokenType(TokenTypeLeftArrow) {
+				parser.PeekNextToken() // 移过 左箭头
+				for impl := parser.ParseClassIdentifier(); impl != nil; impl = parser.ParseClassIdentifier() {
+					classStmt.Implements = append(classStmt.Implements, impl)
+
+					if parser.MatchCurrentTokenType(TokenTypeComma) {
+						parser.PeekNextTokenAvoidAngleConfusing()
+					} else {
+						break
+					}
+				}
+			}
+
+			parser.AssertCurrentTokenIs(TokenTypeLeftBrace, "a left brace",
+				"to start the class statement definition body!")
+
+			hasInitMethod := false
+			for member := parser.ParseClassMember(); member != nil; member = parser.ParseClassMember() {
+				classStmt.Members = append(classStmt.Members, member)
+
+				if method, isMethod := member.(*ClassMemberMethod); !hasInitMethod && isMethod && method.MethodDecl.Name.Token.Str == classId.Name.Token.Str {
+					hasInitMethod = true
+					method.Scope = ClassMemberScopePublic // 构造方法默认 public
+					if len(method.MethodDecl.Signature.Returns) > 0 {
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+							fmt.Sprintf("Any returns by constructor method of class \"%s\" are not allowed!",
+								classId.Name.Token.Str),
+							NoConstructorMethod))
+					}
+				}
+				if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+					break // 等待外部断言
+				}
+			}
+
+			if !hasInitMethod {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+					fmt.Sprintf("expected a constructor for class \"%s\"!", classId.Name.Token.Str),
+					NoConstructorMethod))
+			} // <- 没有构造函数的报错
+
+			parser.AssertCurrentTokenIs(TokenTypeRightBrace, "a right brace",
+				"to terminate the class statement definition body!")
+
+			return classStmt
+
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				"expected an class identifier for class name!", ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseInterfaceMethodDecl() *InterfaceMethodDeclaration {
+	var scopeType ClassMemberScopeType = ClassMemberScopePrivate
+	if parser.MatchCurrentTokenType(TokenTypePublic) {
+		scopeType = ClassMemberScopePublic
+		parser.PeekNextToken()
+	} else if parser.MatchCurrentTokenType(TokenTypePrivate) {
+		parser.PeekNextToken()
+	}
+
+	parser.AssertCurrentTokenIs(TokenTypeFn, "keyword \"fn\"",
+		"to start the announcement of the method in interface declaration statement!")
+
+	methodDecl := new(InterfaceMethodDeclaration)
+	methodDecl.Scope = scopeType
+	if interfaceName := parser.ParseIdentifier(true); interfaceName != nil {
+		methodDecl.Name = interfaceName
+
+		if methodGenerics := parser.ParseGenericsArgs(); methodGenerics != nil {
+			methodDecl.Generics = methodGenerics
+		} // 也可能没有泛型参数
+
+		if signature := parser.ParseSignature(TokenTypeLeftParen, TokenTypeRightParen); signature != nil {
+			methodDecl.Signature = signature
+
+			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate a interface method declaration!")
+
+			return methodDecl
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				fmt.Sprintf("expected a function signature for method \"%s\"!", interfaceName.Token.Str),
+				ParsingUnexpected))
+		}
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParseInterfaceStatement() *InterfaceDeclarationStatement {
+	if parser.MatchCurrentTokenType(TokenTypeInterface) {
+		parser.PeekNextTokenAvoidAngleConfusing() // 移过 'interface'
+		interfaceStmt := new(InterfaceDeclarationStatement)
+
+		if interfaceId := parser.ParseClassIdentifier(); interfaceId != nil {
+			interfaceStmt.Definition = interfaceId
+
+			if parser.MatchCurrentTokenType(TokenTypeColon) {
+				parser.PeekNextTokenAvoidAngleConfusing() // 移过 ':'
+				if extends := parser.ParseClassIdentifier(); extends != nil {
+					interfaceStmt.Extends = extends
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						"expected an class identifier for extended class name!", ParsingUnexpected))
+				}
+			} // 也可能没有继承
+
+			parser.AssertCurrentTokenIs(TokenTypeLeftBrace, "a left brace",
+				"to start the interface statement definition body!")
+
+			for method := parser.ParseInterfaceMethodDecl(); method != nil; method = parser.ParseInterfaceMethodDecl() {
+				interfaceStmt.Methods = append(interfaceStmt.Methods, method)
+
+				if method.Name.Token.Str == interfaceId.Name.Token.Str {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+						fmt.Sprintf("method name being the same with interface name \"%s\"", interfaceId.Name.Token.Str),
+						MethodNameSameWithInterfaceName))
+				} // 方法名不能与接口名相同！
+
+				if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
+					break // 等待外部断言
+				}
+			}
+
+			if len(interfaceStmt.Methods) == 0 {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+					fmt.Sprintf("expected at least one method for interface \"%s\"!", interfaceId.Name.Token.Str),
+					EmptyInterfaceDeclaration))
+			} // <- 空接口
+
+			parser.AssertCurrentTokenIs(TokenTypeRightBrace, "a right brace",
+				"to terminate the interface statement definition body!")
+
+			return interfaceStmt
+
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				"expected an class identifier for interface name!", ParsingUnexpected))
 		}
 	}
 

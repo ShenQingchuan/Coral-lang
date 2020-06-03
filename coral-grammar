@@ -180,11 +180,11 @@ eachStmt ::= 'each' IDENTIFIER (',' IDENTIFIER)? 'in' expression blockStmt
 argument ::= IDENTIFIER typeDescription
 argumentList ::= argument (',' argument)*
 resultList ::= typeDescription (',' typeDescription)*
-signature ::= '(' argumentList* ')' resultList?
+signature ::= '(' argumentList* ')' resultList? (throws typeDescriptor)?
 functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
 
 /* classStmt Example:
-    class VideoDisk<T> : Disk <- Playable {
+    class VideoDisk<T, K> : Disk<K> <- Playable<T> {
         val time T;
         var movieName string;
         var movieDirector string;
@@ -193,25 +193,23 @@ functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
         var hasBeenRented bool = false;
         var renter Customer;
 
-        public rent(c Customer) {
+        public fn rent(c Customer) {
             this.renter = Customer;
             this.hasBeenRented = true;
         }
     }
-
-    var cd1 = new VideoDisk(
-        6491,
-        "孤岛漂流",
-        "John",
-        "Kaddish Movie"
-    );
 */
-scopeKeyword ::= 'public' | 'private' | 'protected'
-classMemberVariable ::= scopeKeyword variableDeclStmt
-classMemberMethod ::= scopeKeyword functionDeclaration
+scopeKeyword ::= 'public' | 'private'
 genericsArgElement ::= IDENTIFIER (genericsArgs)?
 genericsArgs ::= '<' genericsArgElement (',' genericsArgElement)* '>'
-classDeclaration ::= 'class' IDENTIFIER genericsArgs ':' IDENTIFIER '{' (classMemberVariable | classMemberMethod)* '}'
+classIdentifier ::= IDENTIFIER (genericsArgs)?
+classMemberVariable ::= scopeKeyword? variableDeclStmt
+classMemberMethod ::= scopeKeyword? functionDeclaration
+classDeclaration ::= 'class' classIdentifier (':' classIdentifier)? ('<-' classIdentifier (',' classIdentifier)* )
+  '{' (classMemberVariable | classMemberMethod)* '}'
+
+interfaceMethodDecl ::= scopeKeyword? 'fn' IDENTIFIER genericsArgs signature ';'
+interfaceDeclaration ::= 'interface' classIdentifier (':' classIdentifier)? '{' interfaceMethodDecl+ '}'
 
 /* tryCatchStmt Example:
     try {
