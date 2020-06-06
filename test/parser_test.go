@@ -204,6 +204,25 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 			ShouldEqual, "3.11")
 	})
 
+	Convey("测试函数调用时、参数为 lambda 的类型自动推导 (Parser 部分体现为允许 无类型标注)：",
+		t, func() {
+			parser := new(Parser)
+			InitParserFromString(parser, `friends.forEach(|f| -> {
+			f.greet();
+		})`)
+			So(parser.CurrentToken.Str, ShouldEqual, "friends")
+
+			callExpression, isCall := parser.ParseExpression().(*CallExpression)
+			So(isCall, ShouldEqual, true)
+			So(callExpression.Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str,
+				ShouldEqual, "friends")
+			So(callExpression.Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual, "forEach")
+			So(callExpression.Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str,
+				ShouldEqual, "f")
+			So(callExpression.Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Type,
+				ShouldEqual, nil)
+		})
+
 	Convey("测试成员访问表达式：", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, "request.query.page")
@@ -369,18 +388,30 @@ func TestAssignListStatement(t *testing.T) {
 func TestImportStatement(t *testing.T) {
 	Convey("测试导入模块语句：1", t, func() {
 		parser := new(Parser)
+		InitParserFromString(parser, `import stdlib.io as stdio;`)
+		So(parser.CurrentToken.Str, ShouldEqual, "import")
+
+		stmt := parser.ParseStatement()
+		singleGlobalImportStatement, isSingleGlobal := stmt.(*SingleGlobalImportStatement)
+		So(isSingleGlobal, ShouldEqual, true)
+		So(singleGlobalImportStatement.Element.ModuleName.GetFullModuleName(), ShouldEqual, "stdlib.io")
+		So(singleGlobalImportStatement.Element.As.Token.Str, ShouldEqual, "stdio")
+	})
+
+	Convey("测试导入模块语句：2", t, func() {
+		parser := new(Parser)
 		InitParserFromString(parser, `from SeaCoral import Request as Req;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "from")
 
 		stmt := parser.ParseStatement()
-		singleImportStatement, isSingleImport := stmt.(*SingleImportStatement)
+		singleImportStatement, isSingleImport := stmt.(*SingleFromImportStatement)
 		So(isSingleImport, ShouldEqual, true)
 		So(singleImportStatement.From.GetFullModuleName(), ShouldEqual, "SeaCoral")
 		So(singleImportStatement.Element.ModuleName.GetFullModuleName(), ShouldEqual, "Request")
 		So(singleImportStatement.Element.As.Token.Str, ShouldEqual, "Req")
 	})
 
-	Convey("测试导入模块语句：2", t, func() {
+	Convey("测试导入模块语句：3", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, `from SeaCoral import {
       Request as Req,

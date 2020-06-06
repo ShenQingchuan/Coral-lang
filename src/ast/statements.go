@@ -23,7 +23,8 @@ const (
 
 // 定义引入外部模块语句的种类来区分
 const (
-	ImportStatementTypeSingle = iota
+	ImportStatementTypeSingleGlobal = iota
+	ImportStatementTypeSingleFrom
 	ImportStatementTypeList
 )
 
@@ -217,19 +218,34 @@ func (it *ImportElement) NodeType() string {
 	return "Import_Element"
 }
 
-// 单个引入语句
-type SingleImportStatement struct {
+// 直接 import 模块整体的语句
+type SingleGlobalImportStatement struct {
+	Element *ImportElement
+}
+
+func (it *SingleGlobalImportStatement) NodeType() string {
+	return "Single_Global_Import_Statement"
+}
+func (it *SingleGlobalImportStatement) ImportStatementNodeType() int {
+	return ImportStatementTypeSingleGlobal
+}
+func (it *SingleGlobalImportStatement) StatementNodeType() int {
+	return StatementTypeImport
+}
+
+// from 引入单个的语句
+type SingleFromImportStatement struct {
 	From    *ModuleName
 	Element *ImportElement
 }
 
-func (it *SingleImportStatement) NodeType() string {
-	return "Single_Import_Statement"
+func (it *SingleFromImportStatement) NodeType() string {
+	return "Single_From_Import_Statement"
 }
-func (it *SingleImportStatement) ImportStatementNodeType() int {
-	return ImportStatementTypeSingle
+func (it *SingleFromImportStatement) ImportStatementNodeType() int {
+	return ImportStatementTypeSingleFrom
 }
-func (it *SingleImportStatement) StatementNodeType() int {
+func (it *SingleFromImportStatement) StatementNodeType() int {
 	return StatementTypeImport
 }
 

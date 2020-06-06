@@ -24,8 +24,10 @@ statement
     }
 */
 moduleName ::= IDENTIFIER ('.' IDENTIFIER)*
-importElement ::= moduleName ('as' IDENTIFIER)? ';'
-importStmt ::= 'from' moduleName 'import' (importElement ';' | ('{' importElement (',' importElement) '}'))
+importElement ::= moduleName ('as' IDENTIFIER)?
+singleImport ::= 'import' importElement ';'
+importFrom ::= 'from' moduleName 'import' (importElement ';' | ('{' importElement (',' importElement)* '}'))
+importStmt ::= singleImport | importFrom
 
 /* enumStmt Example:
     enum Sex {

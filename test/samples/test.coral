@@ -1,4 +1,4 @@
-import stdio;
+import stdlib;
 
 enum Sex {
   MALE = 0,
@@ -12,7 +12,7 @@ enum Sex {
 */
 class LinkedListNode<T> {
   var value T;
-  var next LinkedListNode;
+  var next  LinkedListNode;
 }
 
 class Person {
@@ -20,7 +20,7 @@ class Person {
   var sex Sex;      // 性别
   var age int;      // 年龄
 
-  init(name string, sex Sex, age int) {
+  Person(name string, sex Sex, age int) {
     this.name = name;
     this.sex = sex;
     this.age = age;
@@ -37,7 +37,6 @@ fn fib(n int)  {
   }
   return fib(n-2) + fib(n-1);
 }
-
 println(fib(4))
 
 var friends Person[];
@@ -45,6 +44,6 @@ each name in ["Peter", "John", "汤姆"] {
   friends.push(new Person(name, MALE, 18));
 }
 
-friends.forEach((f) -> {
+friends.forEach(|f| -> {
   f.greet()
 })

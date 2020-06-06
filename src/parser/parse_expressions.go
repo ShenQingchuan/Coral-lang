@@ -339,7 +339,8 @@ func (parser *Parser) ParseLiteral() Literal {
 			"in map literal definition!")
 		return &TableLit{KeyValueList: elements}
 	case TokenTypeVertical:
-		if signature := parser.ParseSignature(TokenTypeVertical, TokenTypeVertical); signature != nil {
+		// 解析 lambda 时允许不带类型标注
+		if signature := parser.ParseSignature(true, TokenTypeVertical, TokenTypeVertical); signature != nil {
 			lambdaLit := new(LambdaLit)
 			lambdaLit.Signature = signature
 			if parser.MatchCurrentTokenType(TokenTypeRightArrow) {
