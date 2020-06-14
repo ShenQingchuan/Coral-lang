@@ -70,14 +70,14 @@ func TestParseLiteral(t *testing.T) {
 	})
 
 	Convey("测试解析字面量值：lambda", t, func() {
-		parser := new(Parser)
-		InitParserFromString(parser, `
+		parser1 := new(Parser)
+		InitParserFromString(parser1, `
 		var a = |m int, n int| float -> {
 			println((m+n) * 2);
 		};`)
-		So(parser.CurrentToken.Str, ShouldEqual, "var")
+		So(parser1.CurrentToken.Str, ShouldEqual, "var")
 
-		lambdaVar, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
+		lambdaVar, isVarDecl := parser1.ParseStatement().(*VarDeclStatement)
 		So(isVarDecl, ShouldEqual, true)
 		So(lambdaVar.Mutable, ShouldEqual, true)
 		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "int")
@@ -85,6 +85,20 @@ func TestParseLiteral(t *testing.T) {
 		So(lambdaVar.Declarations[0].VarName.Str, ShouldEqual, "a")
 		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Returns[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
 			"float")
+
+		parser2 := new(Parser)
+		InitParserFromString(parser2, `
+		friends.forEach(|f| -> {
+			f.greet();
+		});`)
+		So(parser2.CurrentToken.Str, ShouldEqual, "friends")
+
+		call, isCall := parser2.ParseStatement().(*ExpressionStatement)
+		So(isCall, ShouldEqual, true)
+		So(call.Expression.(*CallExpression).Operand.(*MemberExpression).Member.Operand.Token.Str,
+			ShouldEqual, "forEach")
+		So((call.Expression.(*CallExpression)).Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str,
+			ShouldEqual, "f")
 	})
 }
 func TestBinaryExpression(t *testing.T) {

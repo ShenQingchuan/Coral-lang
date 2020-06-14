@@ -45,5 +45,5 @@ each name in ["Peter", "John", "汤姆"] {
 }
 
 friends.forEach(|f| -> {
-  f.greet()
+  f.greet();
 })

@@ -70,13 +70,15 @@ literal
     | arrayLit
     | tableLit
     | LambdaLit
+    | thisLit
+    | superLit
 operandName ::= IDENTIFIER
 operand ::= literal | operandName
 index ::= '[' expression ']'
 slice ::= '[' expression? ':' expression? ']'
 call ::= '(' expressionList? ')'
 member ::= expression '.' IDENTIFIER ('.' IDENTIFIER)*
-primaryExpr ::= operand (index | slice | call)?
+primaryExpr ::= operand (index | slice | call ｜ member)?
 newInstanceExpression ::= 'new' typeDescription '(' expressionList ')'
 unaryExpr ::= ('-' | '!' | '~') expression
 binaryExpr ::= expression <binaryOperator> expression
@@ -162,14 +164,14 @@ whileStmt ::= 'while' expression blockStmt
 forStmt ::= 'for' simpleStmt? ';' expression ';' (simpleStmt (',' simpleStmt)* )? blockStmt
 
 /* eachStmt Example:
-    each i in [2,4,9,11,18] {
-        println(i);
+    each e in [2,4,9,11,18] {
+        println(e);
     }
 */
 eachStmt ::= 'each' IDENTIFIER (',' IDENTIFIER)? 'in' expression blockStmt
 
 /* functionStmt Example:
-    fn fibonacci(n int) int {
+    fn fibonacci<T>(n T) int {
         var a = n % 2, b = 1;
         for var i = 0; i < n/2; i++ {
             a += b;
@@ -182,7 +184,7 @@ eachStmt ::= 'each' IDENTIFIER (',' IDENTIFIER)? 'in' expression blockStmt
 argument ::= IDENTIFIER typeDescription
 argumentList ::= argument (',' argument)*
 resultList ::= typeDescription (',' typeDescription)*
-signature ::= '(' argumentList* ')' resultList? (throws typeDescriptor)?
+signature ::= '(' argumentList* ')' resultList? ('throws' typeDescriptor)?
 functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
 
 /* classStmt Example:
@@ -210,6 +212,10 @@ classMemberMethod ::= scopeKeyword? functionDeclaration
 classDeclaration ::= 'class' classIdentifier (':' classIdentifier)? ('<-' classIdentifier (',' classIdentifier)* )
   '{' (classMemberVariable | classMemberMethod)* '}'
 
+/* interface RunnableSon<T> : RunnableParent<T> {
+      public fn run();
+   }
+*/
 interfaceMethodDecl ::= scopeKeyword? 'fn' IDENTIFIER genericsArgs signature ';'
 interfaceDeclaration ::= 'interface' classIdentifier (':' classIdentifier)? '{' interfaceMethodDecl+ '}'
 
