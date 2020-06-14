@@ -13,6 +13,7 @@ import (
 const (
 	TokenTypeUnknown = iota
 	TokenTypeImport
+	TokenTypePackage
 	TokenTypeFrom
 	TokenTypeAs
 	TokenTypeEnum
@@ -160,6 +161,7 @@ func InitLexerCommonOperations(lexer *Lexer) {
 
 	lexer.KeywordMap = map[string]TokenType{
 		"import":    TokenTypeImport,
+		"package":   TokenTypePackage,
 		"from":      TokenTypeFrom,
 		"as":        TokenTypeAs,
 		"enum":      TokenTypeEnum,

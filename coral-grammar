@@ -5,6 +5,7 @@ statement
     | breakStmt
     | continueStmt
     | returnStmt
+    | packageStmt
     | importStmt
     | enumStmt
     | blockStmt
@@ -16,6 +17,8 @@ statement
     | eachStmt
     | functionDeclaration
     | classDeclaration
+
+packageStmt ::= package IDENTIFIER ';'
 
 /* importStmt Example:
     from httplib import {

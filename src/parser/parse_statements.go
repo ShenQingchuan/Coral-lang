@@ -20,6 +20,9 @@ func (parser *Parser) ParseStatement() Statement {
 	if returnStatement := parser.ParseReturnStatement(); returnStatement != nil {
 		return returnStatement
 	}
+	if packageStatement := parser.ParsePackageStatement(); packageStatement != nil {
+		return packageStatement
+	}
 	if importStatement := parser.ParseImportStatement(); importStatement != nil {
 		return importStatement
 	}
@@ -55,6 +58,23 @@ func (parser *Parser) ParseStatement() Statement {
 	}
 	if tryCatchStatement := parser.ParseTryCatchStatement(); tryCatchStatement != nil {
 		return tryCatchStatement
+	}
+
+	return nil
+}
+
+func (parser *Parser) ParsePackageStatement() *PackageStatement {
+	if parser.MatchCurrentTokenType(TokenTypePackage) {
+		parser.PeekNextToken() // 移过 'package'
+		pkgStmt := new(PackageStatement)
+
+		if pkgName := parser.ParseIdentifier(false); pkgName != nil {
+			pkgStmt.Name = pkgName
+			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate a package definition!")
+
+			return pkgStmt
+		}
 	}
 
 	return nil

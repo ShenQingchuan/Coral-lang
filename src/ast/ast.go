@@ -33,3 +33,6 @@ type Identifier struct {
 func (it *Identifier) NodeType() string {
 	return "Identifier: " + it.Token.Str
 }
+func (it *Identifier) GetName() string {
+	return it.Token.Str
+}

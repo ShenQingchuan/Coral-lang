@@ -83,4 +83,9 @@ func (parser *Parser) ParseProgram() {
 		// stmt 为 nil 的情况中其实早已被 CoralErrorCrashHandler 处理并退出了
 		parser.Program.Root = append(parser.Program.Root, stmt)
 	}
+
+	if _, isPkgStmt := parser.Program.Root[0].(*PackageStatement); !isPkgStmt {
+		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			"expected a package name for a source file as the first statement!", NoPackageNameDefinition))
+	}
 }

@@ -14,6 +14,7 @@ const (
 	LexBraceUnclosed
 	LexingUnexpected
 	ParsingUnexpected
+	NoPackageNameDefinition
 	NoConstructorMethod
 	EmptyInterfaceDeclaration
 	MethodNameSameWithInterfaceName

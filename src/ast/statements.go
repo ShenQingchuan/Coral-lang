@@ -7,6 +7,7 @@ import (
 // 定义所有语句的种类来区分
 const (
 	StatementTypeSimple = iota
+	StatementTypePackage
 	StatementTypeImport
 	StatementTypeEnum
 	StatementTypeBlock
@@ -563,6 +564,18 @@ func (it *TryCatchStatement) NodeType() string {
 }
 func (it *TryCatchStatement) StatementNodeType() int {
 	return StatementTypeTryCatch
+}
+
+// 定义包名
+type PackageStatement struct {
+	Name *Identifier
+}
+
+func (it *PackageStatement) NodeType() string {
+	return "Package_Statement"
+}
+func (it *PackageStatement) StatementNodeType() int {
+	return StatementTypePackage
 }
 
 // Statement 为所有语句节点定义了接口
