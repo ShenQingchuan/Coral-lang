@@ -224,7 +224,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 	Convey("测试函数调用时、参数为 lambda 的类型自动推导 (Parser 部分体现为允许 无类型标注)：",
 		t, func() {
 			parser := new(Parser)
-			InitParserFromString(parser, `friends.forEach(|f| -> {
+			InitParserFromString(parser, `friends.forEach((f) -> {
 			f.greet();
 		})`)
 			So(parser.CurrentToken.Str, ShouldEqual, "friends")
