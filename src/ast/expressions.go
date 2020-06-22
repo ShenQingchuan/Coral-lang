@@ -259,7 +259,7 @@ func (it *TableLit) OperandNodeType() int {
 // 箭头函数
 type LambdaLit struct {
 	Signature *Signature
-	Block     *BlockStatement
+	Result    Statement
 }
 
 func (it *LambdaLit) NodeType() string {

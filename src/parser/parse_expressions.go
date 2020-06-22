@@ -87,11 +87,20 @@ func (parser *Parser) ParseIdentifierList() []*Identifier {
 func (parser *Parser) ParseExpression() Expression {
 	// 括号表达式优先级最高
 	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
-		parser.PeekNextToken() // 移过左括号
-		inParenExpression := parser.ParseExpression()
-		parser.AssertCurrentTokenIs(TokenTypeRightParen,
-			"right parenthesis", "to close a parenthesis expression!")
-		return parser.TryParseBinaryExpression(inParenExpression)
+		currentLexerPos := parser.Lexer.BytePos
+		tryLambdaLitExpression := parser.ParsePrimaryExpression() // 由于左圆括号的特殊性 先尝试解析 lambdaLit
+		if tryLambdaLitExpression != nil {
+			if _, isLambda := tryLambdaLitExpression.(*BasicPrimaryExpression).It.(*LambdaLit); isLambda {
+				return parser.TryParseBinaryExpression(tryLambdaLitExpression)
+			}
+		} else {
+			parser.Lexer.BytePos = currentLexerPos // 如果不是 lambda 恢复词法器位置
+			parser.PeekNextToken()                 // 移过左括号
+			inParenExpression := parser.ParseExpression()
+			parser.AssertCurrentTokenIs(TokenTypeRightParen,
+				"right parenthesis", "to close a parenthesis expression!")
+			return parser.TryParseBinaryExpression(inParenExpression)
+		}
 	}
 
 	if unaryExpression := parser.ParseUnaryExpression(); unaryExpression != nil {
@@ -338,15 +347,17 @@ func (parser *Parser) ParseLiteral() Literal {
 		parser.AssertCurrentTokenIs(TokenTypeRightBrace, "right brace",
 			"in map literal definition!")
 		return &TableLit{KeyValueList: elements}
-	case TokenTypeVertical:
-		// 解析 lambda 时允许不带类型标注
-		if signature := parser.ParseSignature(true, TokenTypeVertical, TokenTypeVertical); signature != nil {
+	case TokenTypeLeftParen:
+		if signature := parser.ParseSignature(true); signature != nil {
 			lambdaLit := new(LambdaLit)
 			lambdaLit.Signature = signature
 			if parser.MatchCurrentTokenType(TokenTypeRightArrow) {
 				parser.PeekNextToken() // 移过尖头
 				if lambdaBlock := parser.ParseBlockStatement(); lambdaBlock != nil {
-					lambdaLit.Block = lambdaBlock
+					lambdaLit.Result = lambdaBlock
+					return lambdaLit
+				} else if lambdaExpr := parser.ParseExpression(); lambdaExpr != nil {
+					lambdaLit.Result = lambdaExpr
 					return lambdaLit
 				} else {
 					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",

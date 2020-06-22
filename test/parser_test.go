@@ -72,7 +72,7 @@ func TestParseLiteral(t *testing.T) {
 	Convey("测试解析字面量值：lambda", t, func() {
 		parser1 := new(Parser)
 		InitParserFromString(parser1, `
-		var a = |m int, n int| float -> {
+		var a = (m ,n int) float -> {
 			println((m+n) * 2);
 		};`)
 		So(parser1.CurrentToken.Str, ShouldEqual, "var")
@@ -80,15 +80,18 @@ func TestParseLiteral(t *testing.T) {
 		lambdaVar, isVarDecl := parser1.ParseStatement().(*VarDeclStatement)
 		So(isVarDecl, ShouldEqual, true)
 		So(lambdaVar.Mutable, ShouldEqual, true)
-		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "int")
-		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str, ShouldEqual, "m")
+		lambdaLit := lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit)
+		So(lambdaLit.Signature.Arguments[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "int")
+		So(lambdaLit.Signature.Arguments[0].Name.Token.Str, ShouldEqual, "m")
 		So(lambdaVar.Declarations[0].VarName.Str, ShouldEqual, "a")
-		So(lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Returns[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
+		So(lambdaLit.Signature.Returns[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
 			"float")
+		So(lambdaLit.Result.(*BlockStatement).Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.GetName(),
+			ShouldEqual, "println")
 
 		parser2 := new(Parser)
 		InitParserFromString(parser2, `
-		friends.forEach(|f| -> {
+		friends.forEach((f) -> {
 			f.greet();
 		});`)
 		So(parser2.CurrentToken.Str, ShouldEqual, "friends")
@@ -294,6 +297,25 @@ func TestVarValDeclarationStatement(t *testing.T) {
 			"6")
 	})
 
+	Convey("测试变量定义：1", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "var a rune[3] = ['c', 'd', '我'];")
+		So(parser.CurrentToken.Str, ShouldEqual, "var")
+
+		varDeclStatement, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
+		So(isVarDecl, ShouldEqual, true)
+
+		So(varDeclStatement.Mutable, ShouldEqual, true)
+		So(varDeclStatement.Declarations[0].VarName.Str, ShouldEqual,
+			"a")
+		So(varDeclStatement.Declarations[0].Type.(*ArrayTypeLit).ElementType.(*TypeName).Identifier.Token.Str, ShouldEqual,
+			"rune")
+		So(varDeclStatement.Declarations[0].Type.(*ArrayTypeLit).ArrayLength, ShouldEqual,
+			3)
+		So(varDeclStatement.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*ArrayLit).ValueList[2].(*BasicPrimaryExpression).It.(*RuneLit).Value.Str, ShouldEqual,
+			"我")
+	})
+
 	Convey("测试变量定义：2", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, "val 圆周率 = 3.14, 光速 = 3e8;")
@@ -402,32 +424,32 @@ func TestAssignListStatement(t *testing.T) {
 func TestImportStatement(t *testing.T) {
 	Convey("测试导入模块语句：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `import stdlib.io as stdio;`)
+		InitParserFromString(parser, `import stdlib as std;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "import")
 
 		stmt := parser.ParseStatement()
 		singleGlobalImportStatement, isSingleGlobal := stmt.(*SingleGlobalImportStatement)
 		So(isSingleGlobal, ShouldEqual, true)
-		So(singleGlobalImportStatement.Element.ModuleName.GetFullModuleName(), ShouldEqual, "stdlib.io")
-		So(singleGlobalImportStatement.Element.As.Token.Str, ShouldEqual, "stdio")
+		So(singleGlobalImportStatement.Element.ModuleName.GetName(), ShouldEqual, "stdlib")
+		So(singleGlobalImportStatement.Element.As.Token.Str, ShouldEqual, "std")
 	})
 
 	Convey("测试导入模块语句：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `from SeaCoral import Request as Req;`)
+		InitParserFromString(parser, `from httplib import Request as Req;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "from")
 
 		stmt := parser.ParseStatement()
 		singleImportStatement, isSingleImport := stmt.(*SingleFromImportStatement)
 		So(isSingleImport, ShouldEqual, true)
-		So(singleImportStatement.From.GetFullModuleName(), ShouldEqual, "SeaCoral")
-		So(singleImportStatement.Element.ModuleName.GetFullModuleName(), ShouldEqual, "Request")
+		So(singleImportStatement.From.GetName(), ShouldEqual, "httplib")
+		So(singleImportStatement.Element.ModuleName.GetName(), ShouldEqual, "Request")
 		So(singleImportStatement.Element.As.Token.Str, ShouldEqual, "Req")
 	})
 
 	Convey("测试导入模块语句：3", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `from SeaCoral import {
+		InitParserFromString(parser, `from httplib import {
       Request as Req,
 			Response as Resp
     }`)
@@ -435,10 +457,10 @@ func TestImportStatement(t *testing.T) {
 
 		listImportStatement, isListImport := parser.ParseStatement().(*ListImportStatement)
 		So(isListImport, ShouldEqual, true)
-		So(listImportStatement.From.GetFullModuleName(), ShouldEqual, "SeaCoral")
-		So(listImportStatement.Elements[0].ModuleName.GetFullModuleName(), ShouldEqual, "Request")
+		So(listImportStatement.From.GetName(), ShouldEqual, "httplib")
+		So(listImportStatement.Elements[0].ModuleName.GetName(), ShouldEqual, "Request")
 		So(listImportStatement.Elements[0].As.Token.Str, ShouldEqual, "Req")
-		So(listImportStatement.Elements[1].ModuleName.GetFullModuleName(), ShouldEqual, "Response")
+		So(listImportStatement.Elements[1].ModuleName.GetName(), ShouldEqual, "Response")
 		So(listImportStatement.Elements[1].As.Token.Str, ShouldEqual, "Resp")
 	})
 }

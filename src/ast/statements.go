@@ -193,25 +193,9 @@ func (it *BlockStatement) StatementNodeType() int {
 	return StatementTypeBlock
 }
 
-// 模块名称节点
-type ModuleName struct {
-	NameUnits []*Identifier
-}
-
-func (it *ModuleName) GetFullModuleName() string {
-	var fullModuleName string
-	for i, id := range it.NameUnits {
-		fullModuleName += id.Token.Str
-		if i != len(it.NameUnits)-1 {
-			fullModuleName += "."
-		}
-	}
-	return fullModuleName
-}
-
 // 引入语句单元
 type ImportElement struct {
-	ModuleName *ModuleName
+	ModuleName *Identifier
 	As         *Identifier
 }
 
@@ -236,7 +220,7 @@ func (it *SingleGlobalImportStatement) StatementNodeType() int {
 
 // from 引入单个的语句
 type SingleFromImportStatement struct {
-	From    *ModuleName
+	From    *Identifier
 	Element *ImportElement
 }
 
@@ -252,7 +236,7 @@ func (it *SingleFromImportStatement) StatementNodeType() int {
 
 // 集合引入语句
 type ListImportStatement struct {
-	From     *ModuleName
+	From     *Identifier
 	Elements []*ImportElement
 }
 

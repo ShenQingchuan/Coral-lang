@@ -56,16 +56,22 @@
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">基础语法</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#_2">文件概念</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#_3">包与模块</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#_3">终结分隔符</a>
+    <li class="toctree-l3"><a class="reference internal" href="#_4">编译目标</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#_4">注释</a>
+        </ul>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#_5">标识符</a>
+    <li class="toctree-l2"><a class="reference internal" href="#_5">终结分隔符</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#_6">关键字</a>
+    <li class="toctree-l2"><a class="reference internal" href="#_6">注释</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#_7">转义字符</a>
+    <li class="toctree-l2"><a class="reference internal" href="#_7">标识符</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_8">关键字</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#_9">转义字符</a>
     </li>
     </ul>
                     </li>
@@ -125,18 +131,25 @@ name
 </code></pre>
 
 <h2 id="_2">文件概念</h2>
+<h3 id="_3">包与模块</h3>
+<p>coral 强制要求程序员在第一行声明当前的包名。</p>
+<pre><code class="coral">package hello;
+</code></pre>
+
+<p>这有助于解决导入时可能造成的 "名字空间" 冲突等问题。</p>
+<h3 id="_4">编译目标</h3>
 <p>Coral 的目标是将 <code>.coral</code> 源代码编译到 <code>.cbytes</code> 字节码文件，然后通过虚拟机执行。</p>
-<p>我们倾向于让这门语言看上去像脚本语言一样，没有所谓的 <code>main()</code> 函数。</p>
+<p>我们倾向于让这门语言看上去像脚本语言一样，所以无需 <code>main()</code> 函数。</p>
 <pre><code class="bash">coral out.cbytes
 </code></pre>
 
-<h2 id="_3">终结分隔符</h2>
+<h2 id="_5">终结分隔符</h2>
 <p>在 Coral 程序中，每个语句正如 C 家族中的其它语言一样以分号 <code>;</code> 结尾。以下为两个语句：</p>
 <pre><code class="coral">var msg = &quot;Hello World&quot;
 println(msg);
 </code></pre>
 
-<h2 id="_4">注释</h2>
+<h2 id="_6">注释</h2>
 <p>注释不会被编译，甚至在词法分析阶段就被忽略了。</p>
 <p>单行注释是最常见的注释形式，你可以在任何地方使用以 <code>//</code> 开头的单行注释。多行注释也叫块注释，均已以 <code>/*</code> 开头，并以 <code>*/</code> 结尾。如：</p>
 <pre><code class="coral">// 单行注释
@@ -146,7 +159,7 @@ println(msg);
  */
 </code></pre>
 
-<h2 id="_5">标识符</h2>
+<h2 id="_7">标识符</h2>
 <p>标识符用来命名变量、类型等程序实体。一个标识符实际上就是
 一个或是多个 Unicode 字符（<strong>没错，支持中文变量名</strong>）或下划线 <code>_</code> 组成的序列，
 但是第一个字符必须是 Unicode 字符或下划线，<strong>而不能是数字</strong>。</p>
@@ -161,17 +174,17 @@ myname50  _temp   j     a23b9       retVal
 <li><code>case</code> Coral 语言的关键字</li>
 <li><code>a+b</code> 运算符是不允许的</li>
 </ul>
-<h2 id="_6">关键字</h2>
+<h2 id="_8">关键字</h2>
 <p>下面列举了 Coral 代码中可能会使用到的所有关键字或保留字：</p>
-<pre><code class="txt"> import  from     as       enum       break  continue
- return  var      val      if         elif   else
- switch  default  case     while      for    each
- in      fn       class    interface  this   super
- static  new      nil      true       false  try     
- catch   finally  throws
+<pre><code class="txt"> import    package  from       as         enum         break  
+ continue  return   var        val        if           elif   
+ else      switch   default    case       while        for    
+ each      in       fn         class      interface    this   
+ super     static   new        nil        true         false  
+ try       catch    finally    throws
 </code></pre>
 
-<h2 id="_7">转义字符</h2>
+<h2 id="_9">转义字符</h2>
 <p>Coral 语言支持以下一些特殊的转义字符序列：</p>
 <table>
 <thead>

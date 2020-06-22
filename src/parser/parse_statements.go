@@ -281,8 +281,7 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 }
 
 func (parser *Parser) ParseImportElement() *ImportElement {
-	if nameUnits := parser.ParseIdentifierList(); nameUnits != nil {
-		moduleName := &ModuleName{NameUnits: nameUnits}
+	if moduleName := parser.ParseIdentifier(false); moduleName != nil {
 		importElement := &ImportElement{
 			ModuleName: moduleName,
 			As:         nil,
@@ -324,9 +323,7 @@ func (parser *Parser) ParseImportElementList() []*ImportElement {
 func (parser *Parser) ParseImportStatement() ImportStatement {
 	if parser.MatchCurrentTokenType(TokenTypeFrom) {
 		parser.PeekNextToken() // 移过 'from'
-		if nameUnits := parser.ParseIdentifierList(); nameUnits != nil && len(nameUnits) > 0 {
-			from := &ModuleName{NameUnits: nameUnits}
-
+		if from := parser.ParseIdentifier(false); from != nil {
 			if parser.MatchCurrentTokenType(TokenTypeImport) {
 				parser.PeekNextToken() // 移过 'import'
 				// 进入分支判断：
@@ -761,17 +758,12 @@ func (parser *Parser) ParseEachStatement() *EachStatement {
 	return nil
 }
 
-func (parser *Parser) ParseArgument(ifAllowNoTypeDescription bool) *Argument {
+func (parser *Parser) ParseArgument() *Argument {
 	if argName := parser.ParseIdentifier(false); argName != nil {
 		argument := new(Argument)
 		argument.Name = argName
 
 		if argType := parser.ParseTypeDescription(); argType != nil {
-			if !ifAllowNoTypeDescription {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-					fmt.Sprintf("expected a type description for argument '%s'!", argName.Token.Str), ParsingUnexpected))
-			}
-
 			argument.Type = argType
 		}
 
@@ -781,10 +773,27 @@ func (parser *Parser) ParseArgument(ifAllowNoTypeDescription bool) *Argument {
 	return nil
 }
 
-func (parser *Parser) ParseArgumentList(ifAllowNoTypeDescription bool) []*Argument {
+func (parser *Parser) ParseArgumentList() []*Argument {
 	var argList []*Argument
-	for arg := parser.ParseArgument(ifAllowNoTypeDescription); arg != nil; arg = parser.ParseArgument(ifAllowNoTypeDescription) {
+	var noTypeDescriptorList []*Argument
+	currentInShorthand := false
+
+	for arg := parser.ParseArgument(); arg != nil; arg = parser.ParseArgument() {
+		if arg.Type == nil {
+			// 监测到一个没有类型声明的形参
+			noTypeDescriptorList = append(noTypeDescriptorList, arg) // 记录入队
+			currentInShorthand = true                                // 亮起标志位，之后如果遇到有类型，则清空队列
+		} else {
+			if currentInShorthand {
+				for _, noTypingArg := range noTypeDescriptorList {
+					noTypingArg.Type = arg.Type
+					argList = append(argList, noTypingArg)
+				}
+				noTypeDescriptorList = make([]*Argument, 0) // 让 GC 回收原队列切片内存
+			}
+		}
 		argList = append(argList, arg)
+
 		if parser.MatchCurrentTokenType(TokenTypeComma) {
 			parser.PeekNextToken() // 移过 ','
 		} else {
@@ -808,13 +817,20 @@ func (parser *Parser) ParseReturnList() []TypeDescription {
 	return returnList
 }
 
-func (parser *Parser) ParseSignature(ifAllowNoTypeDescription bool, startTokenType TokenType, endTokenType TokenType) *Signature {
-	if parser.MatchCurrentTokenType(startTokenType) {
+func (parser *Parser) ParseSignature(allowReturnNil bool) *Signature {
+	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		parser.PeekNextToken() // 移过左括号
 		signature := new(Signature)
-		signature.Arguments = parser.ParseArgumentList(ifAllowNoTypeDescription)
-		parser.AssertCurrentTokenIs(endTokenType, "a right parenthesis",
-			"in the function signature!")
+		signature.Arguments = parser.ParseArgumentList()
+		if !parser.MatchCurrentTokenType(TokenTypeRightParen) {
+			if allowReturnNil {
+				return nil
+			} else {
+				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					"expected a right parenthesis in the function signature!", ParsingUnexpected))
+			}
+		}
+		parser.PeekNextToken() // 移过右括号
 		signature.Returns = parser.ParseReturnList()
 
 		if parser.MatchCurrentTokenType(TokenTypeThrows) {
@@ -896,7 +912,7 @@ func (parser *Parser) ParseFnStatement() *FunctionDeclarationStatement {
 				fnStmt.Generics = fnGenerics
 			} // 函数也可能没有泛型参数
 
-			if signature := parser.ParseSignature(false, TokenTypeLeftParen, TokenTypeRightParen); signature != nil {
+			if signature := parser.ParseSignature(false); signature != nil {
 				fnStmt.Signature = signature
 
 				if fnBlock := parser.ParseBlockStatement(); fnBlock != nil {
@@ -1051,7 +1067,7 @@ func (parser *Parser) ParseInterfaceMethodDecl() *InterfaceMethodDeclaration {
 			methodDecl.Generics = methodGenerics
 		} // 也可能没有泛型参数
 
-		if signature := parser.ParseSignature(false, TokenTypeLeftParen, TokenTypeRightParen); signature != nil {
+		if signature := parser.ParseSignature(false); signature != nil {
 			methodDecl.Signature = signature
 
 			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",

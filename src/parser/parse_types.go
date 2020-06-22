@@ -2,8 +2,10 @@ package parser
 
 import (
 	. "coral-lang/src/ast"
+	. "coral-lang/src/exception"
 	. "coral-lang/src/lexer"
 	"fmt"
+	"strconv"
 )
 
 func (parser *Parser) ParseTypeDescription() TypeDescription {
@@ -35,6 +37,16 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 				parser.PeekNextToken() // 移过左中括号
 				arrayLit := new(ArrayTypeLit)
 				arrayLit.ElementType = typeName
+
+				if arrLenLiteral, isDecimal := parser.ParseLiteral().(*DecimalLit); isDecimal && arrLenLiteral != nil {
+					arrLen, convertErr := strconv.Atoi(arrLenLiteral.Value.Str)
+					if convertErr != nil {
+						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+							"expected a decimal number as array length declaration!", ParsingUnexpected))
+					}
+					arrayLit.ArrayLength = arrLen
+				}
+
 				parser.AssertCurrentTokenIs(TokenTypeRightBracket, "a right bracket",
 					"to terminate a array type descriptor!")
 				return arrayLit

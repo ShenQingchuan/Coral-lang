@@ -21,7 +21,7 @@ func TestPeekChar(t *testing.T) {
 
 	Convey("测试 PeekChar：", t, func() {
 		firstUtf8Char := testLexer.PeekChar()
-		So(firstUtf8Char.Rune, ShouldEqual, 'i')
+		So(firstUtf8Char.Rune, ShouldEqual, 'p')
 	})
 }
 func TestPeekNextChar(t *testing.T) {
@@ -32,7 +32,7 @@ func TestPeekNextChar(t *testing.T) {
 	Convey("测试 PeekNextChar：", t, func() {
 		firstUtf8Char := testLexer.PeekChar()
 		secondUtf8Char := testLexer.PeekNextChar(firstUtf8Char.ByteLength)
-		So(secondUtf8Char.Rune, ShouldEqual, 'm')
+		So(secondUtf8Char.Rune, ShouldEqual, 'a')
 	})
 }
 func TestPeekNextCharByStep(t *testing.T) {
@@ -43,7 +43,7 @@ func TestPeekNextCharByStep(t *testing.T) {
 	Convey("测试 PeekNextCharByStep：", t, func() {
 		firstUtf8Char := testLexer.PeekChar()
 		fourthUtf8Char := testLexer.PeekNextCharByStep(firstUtf8Char.ByteLength, 3)
-		So(fourthUtf8Char.Rune, ShouldEqual, 'o')
+		So(fourthUtf8Char.Rune, ShouldEqual, 'k')
 	})
 }
 func TestGoNextChar(t *testing.T) {
@@ -53,7 +53,7 @@ func TestGoNextChar(t *testing.T) {
 
 	Convey("测试 GoNextChar", t, func() {
 		testLexer.GoNextCharByStep(3)
-		So(testLexer.PeekChar().Rune, ShouldEqual, 'o')
+		So(testLexer.PeekChar().Rune, ShouldEqual, 'k')
 	})
 }
 func TestReadDecimal(t *testing.T) {

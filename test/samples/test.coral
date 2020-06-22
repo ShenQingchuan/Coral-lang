@@ -1,6 +1,10 @@
 package test;
 
 import stdlib;
+from httplib import {
+  Request  as Req,
+  Response as Resp
+}
 
 enum Sex {
   MALE = 0,
@@ -22,7 +26,7 @@ class Person {
   var sex Sex;      // 性别
   var age int;      // 年龄
 
-  Person(name string, sex Sex, age int) {
+  fn Person(name string, sex Sex, age int) {
     this.name = name;
     this.sex = sex;
     this.age = age;
@@ -46,6 +50,10 @@ each name in ["Peter", "John", "汤姆"] {
   friends.push(new Person(name, MALE, 18));
 }
 
-friends.forEach(|f| -> {
+fn createEquation(a, b, c double) (double) -> double {
+  return (x) -> a * pow(x, 2) + b * x + c
+}
+
+friends.forEach((f) -> {
   f.greet();
 })

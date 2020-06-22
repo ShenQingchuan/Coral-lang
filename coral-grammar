@@ -26,11 +26,11 @@ packageStmt ::= package IDENTIFIER ';'
         Response as HttpRes;
     }
 */
-moduleName ::= IDENTIFIER ('.' IDENTIFIER)*
+moduleName ::= IDENTIFIER
 importElement ::= moduleName ('as' IDENTIFIER)?
-singleImport ::= 'import' importElement ';'
+singleGlobalImport ::= 'import' importElement ';'
 importFrom ::= 'from' moduleName 'import' (importElement ';' | ('{' importElement (',' importElement)* '}'))
-importStmt ::= singleImport | importFrom
+importStmt ::= singleGlobalImport | importFrom
 
 /* enumStmt Example:
     enum Sex {
@@ -57,7 +57,7 @@ stringLit ::= '"' (~["\\] | escapeValue)*  '"'
 arrayLit ::= '[' expressionList? ']'
 tableElement ::= IDENTIFIER ':' expression
 tableLit ::= '{' tableElement (',' tableElement)* '}'
-lambdaLit ::= ('|' signature '|' '->' blockStmt)
+lambdaLit ::= signature '->' (blockStmt | expression)
 literal
     ::= nilLit
     | trueLit
