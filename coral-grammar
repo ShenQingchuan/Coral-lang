@@ -101,7 +101,10 @@ returnStmt ::= 'return' expressionList? ';'
 mixAssignOperator ::= ('+' | '-' | '|' | '^' | '*' | '/' | '%' | '<<' | '>>' | '&') '='
 assignStmt ::= (primaryExpressionList '=' expressionList) ';'
 typeName ::= IDENTIFIER
-typeDescription ::= (typeDescription '[' ']') | (typeName ('<' typeName (',' typeName)* '>')? )
+typeDescription
+  ::= (typeName ('<' typeName (',' typeName)* '>')? )
+  | '(' typeDescription (',' typeDescription)* ')' '->' typeDescription (',' typeDescription)*
+  | (typeDescription '[' ']')
 variableDeclElement ::= IDENTIFIER (typeDescription | (typeDescription? '=' expression))
 variableDeclStmt ::= ('var' | 'val') variableDeclElement (',' variableDeclElement)* ';'
 simpleStmt
@@ -187,7 +190,7 @@ eachStmt ::= 'each' IDENTIFIER (',' IDENTIFIER)? 'in' expression blockStmt
 argument ::= IDENTIFIER typeDescription
 argumentList ::= argument (',' argument)*
 resultList ::= typeDescription (',' typeDescription)*
-signature ::= '(' argumentList* ')' resultList? ('throws' typeDescriptor)?
+signature ::= '(' argumentList* ')' resultList? ('throws' typeDescription)?
 functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
 
 /* classStmt Example:
@@ -232,5 +235,5 @@ interfaceDeclaration ::= 'interface' classIdentifier (':' classIdentifier)? '{' 
     }
 */
 
-catchHandler ::= ('catch' IDENTIFIER typeDescriptor blockStmt)
+catchHandler ::= ('catch' IDENTIFIER typeDescription blockStmt)
 tryCatchStmt ::= 'try' blockStmt catchHandler+ ('finally' blockStmt)?

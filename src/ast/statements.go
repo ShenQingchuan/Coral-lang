@@ -143,21 +143,6 @@ func (it *VarDeclStatement) StatementNodeType() int {
 	return StatementTypeSimple
 }
 
-// 语句语句节点
-type ExpressionStatement struct {
-	Expression Expression
-}
-
-func (it ExpressionStatement) NodeType() string {
-	return "Simple_Statement_Expression"
-}
-func (it ExpressionStatement) SimpleStatementNodeType() int {
-	return SimpleStmtTypeExpression
-}
-func (it ExpressionStatement) StatementNodeType() int {
-	return StatementTypeSimple
-}
-
 // 同句多赋值语句定义的
 type AssignListStatement struct {
 	Token   *Token // Token: '='

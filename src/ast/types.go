@@ -3,6 +3,7 @@ package ast
 // 定义类型标注的种类来区分
 const (
 	TypeDescriptionTypeName = iota
+	TypeDescriptionFunction
 	TypeDescriptionTypeArrayLit
 	TypeDescriptionTypeGenerics
 )
@@ -25,7 +26,19 @@ func (it *TypeName) TypeDescriptionNode() int {
 	return TypeDescriptionTypeName
 }
 
-// 数组类型标识 eg: [T]
+type FuncType struct {
+	ArgTypes    []TypeDescription
+	ReturnTypes []TypeDescription
+}
+
+func (it *FuncType) NodeType() string {
+	return "Func_Type"
+}
+func (it *FuncType) TypeDescriptionNode() int {
+	return TypeDescriptionFunction
+}
+
+// 数组类型标识 eg: T[]
 type ArrayTypeLit struct {
 	ElementType TypeDescription
 	ArrayLength int

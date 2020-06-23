@@ -86,7 +86,7 @@ func TestParseLiteral(t *testing.T) {
 		So(lambdaVar.Declarations[0].VarName.Str, ShouldEqual, "a")
 		So(lambdaLit.Signature.Returns[0].(*TypeName).Identifier.Token.Str, ShouldEqual,
 			"float")
-		So(lambdaLit.Result.(*BlockStatement).Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.GetName(),
+		So(lambdaLit.Result.(*BlockStatement).Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.GetName(),
 			ShouldEqual, "println")
 
 		parser2 := new(Parser)
@@ -96,11 +96,11 @@ func TestParseLiteral(t *testing.T) {
 		});`)
 		So(parser2.CurrentToken.Str, ShouldEqual, "friends")
 
-		call, isCall := parser2.ParseStatement().(*ExpressionStatement)
+		call, isCall := parser2.ParseStatement().(*CallExpression)
 		So(isCall, ShouldEqual, true)
-		So(call.Expression.(*CallExpression).Operand.(*MemberExpression).Member.Operand.Token.Str,
+		So(call.Operand.(*MemberExpression).Member.Operand.Token.Str,
 			ShouldEqual, "forEach")
-		So((call.Expression.(*CallExpression)).Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str,
+		So(call.Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str,
 			ShouldEqual, "f")
 	})
 }
@@ -501,9 +501,9 @@ func TestIfStatement(t *testing.T) {
 			"closed")
 		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext, ShouldEqual,
 			nil)
-		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.If.Block.Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(ifStatement.If.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
+		So(ifStatement.If.Block.Statements[0].(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"屏幕还没关！")
 	})
 
@@ -546,15 +546,15 @@ func TestIfStatement(t *testing.T) {
 			"1.3e6")
 		So(ifStatement.Elif[0].Block.Statements[0].(*AssignListStatement).Values[1].(*BasicPrimaryExpression).It.(*RuneLit).Value.Str, ShouldEqual,
 			"Z")
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeEqual)
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.Else.Statements[0].(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeEqual)
+		So(ifStatement.Else.Statements[0].(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"bb")
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual,
+		So(ifStatement.Else.Statements[0].(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
+		So(ifStatement.Else.Statements[0].(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Operator.Kind, ShouldEqual,
 			TokenTypeStar)
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
+		So(ifStatement.Else.Statements[0].(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Left.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"3")
-		So(ifStatement.Else.Statements[0].(*ExpressionStatement).Expression.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(ifStatement.Else.Statements[0].(*BinaryExpression).Right.(*BinaryExpression).Right.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"dd")
 	})
 }
@@ -580,9 +580,9 @@ func TestSwitchStatement(t *testing.T) {
 			"tom")
 		So(switchStatement.Entry.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
 			"grade")
-		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(switchStatement.Default.Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(switchStatement.Default.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
+		So(switchStatement.Default.Statements[0].(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"incorrect grade number!")
 
 		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
@@ -591,9 +591,9 @@ func TestSwitchStatement(t *testing.T) {
 			true)
 		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"59")
-		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[0].(*SwitchStatementRangeCase).Block.Statements[0].(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"Failed.")
 
 		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.Start.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
@@ -602,9 +602,9 @@ func TestSwitchStatement(t *testing.T) {
 			true)
 		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Range.End.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"100")
-		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
+		So(switchStatement.Cases[1].(*SwitchStatementRangeCase).Block.Statements[0].(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual,
 			"Lucky pass!")
 	})
 }
@@ -631,9 +631,9 @@ func TestWhileStatement(t *testing.T) {
 		So(whileStatement.Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual,
 			"10")
 
-		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(whileStatement.Block.Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
-		So(whileStatement.Block.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
+		So(whileStatement.Block.Statements[0].(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"num")
 
 		So(whileStatement.Block.Statements[1].(*IncDecStatement).Operator.Kind, ShouldEqual, TokenTypeDoublePlus)
@@ -921,8 +921,8 @@ func TestTryCatchStatement(t *testing.T) {
 		So(tryCatchStmt.Handlers[1].Name.Token.Str, ShouldEqual, "e")
 		So(tryCatchStmt.Handlers[1].ErrorType.(*TypeName).Identifier.Token.Str, ShouldEqual, "CCException")
 
-		So(tryCatchStmt.Finally.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual, "println")
-		So(tryCatchStmt.Finally.Statements[0].(*ExpressionStatement).Expression.(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual, "hahaha, it's ok")
+		So(tryCatchStmt.Finally.Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual, "println")
+		So(tryCatchStmt.Finally.Statements[0].(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual, "hahaha, it's ok")
 	})
 }
 func TestPackageStatement(t *testing.T) {
@@ -934,5 +934,29 @@ func TestPackageStatement(t *testing.T) {
 		pkgStmt, isPkg := parser.ParseStatement().(*PackageStatement)
 		So(isPkg, ShouldEqual, true)
 		So(pkgStmt.Name.GetName(), ShouldEqual, "test")
+	})
+}
+func TestTypeDescriptions(t *testing.T) {
+	Convey("*补充* - 测试解析类型声明 & 一条语句的 lambda：", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, `
+		fn createEquation(a, b, c double) (double) -> double {
+			return (x) -> a * pow(x, 2) + b * x + c;
+		}
+		`)
+		So(parser.CurrentToken.Str, ShouldEqual, "fn")
+
+		fnDeclStmt, isFnDeclStmt := parser.ParseStatement().(*FunctionDeclarationStatement)
+		So(isFnDeclStmt, ShouldEqual, true)
+
+		funcType, isFuncType := fnDeclStmt.Signature.Returns[0].(*FuncType)
+		So(isFuncType, ShouldEqual, true)
+		So(funcType.ArgTypes[0].(*TypeName).Identifier.GetName(), ShouldEqual, "double")
+		So(funcType.ReturnTypes[0].(*TypeName).Identifier.GetName(), ShouldEqual, "double")
+
+		binaryResult, isBinaryResult :=
+			fnDeclStmt.Block.Statements[0].(*ReturnStatement).Expression[0].(*BasicPrimaryExpression).It.(*LambdaLit).Result.(*BinaryExpression)
+		So(isBinaryResult, ShouldEqual, true)
+		So(binaryResult.Operator.Kind, ShouldEqual, TokenTypePlus)
 	})
 }

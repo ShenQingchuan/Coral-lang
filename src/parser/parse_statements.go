@@ -127,13 +127,11 @@ func (parser *Parser) ParseSimpleStatement(needSemiEnd bool) SimpleStatement {
 			return incDecStatement
 		}
 
-		if needSemiEnd && parser.MatchCurrentTokenType(TokenTypeSemi) {
-			parser.PeekNextToken() // 移过分号 ';'
-		} else {
-			CoralErrorCrashHandler(NewCoralError(parser.GetCurrentTokenPos(),
-				"expected a semicolon to terminate this statement!", ParsingUnexpected))
+		if needSemiEnd {
+			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate this statement!")
 		}
-		return &ExpressionStatement{Expression: expression}
+		return expression // 表达式作为语句
 	}
 	if varDeclStatement := parser.ParseVarDeclStatement(); varDeclStatement != nil {
 		if needSemiEnd {

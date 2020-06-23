@@ -55,8 +55,37 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 				return typeName
 			}
 		}
+	} else if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
+		parser.PeekNextToken() // 移过左圆括号
+		funcType := new(FuncType)
+		for {
+			if argType := parser.ParseTypeDescription(); argType != nil {
+				funcType.ArgTypes = append(funcType.ArgTypes, argType)
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextToken() // 移过逗号
+				} else if parser.MatchCurrentTokenType(TokenTypeRightParen) {
+					parser.PeekNextToken() // 移过右括号
+					break                  // 结束函数类型参数部分解析
+				} else {
+					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						"expected a comma to separate arguments' type or right parenthesis to terminate in function type!",
+						ParsingUnexpected))
+				}
+			}
+		}
+		parser.AssertCurrentTokenIs(TokenTypeRightArrow, "a right arrow",
+			"in the function type declaration!")
+		for {
+			if returnType := parser.ParseTypeDescription(); returnType != nil {
+				funcType.ReturnTypes = append(funcType.ReturnTypes, returnType)
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextToken() // 移过逗号
+				} else {
+					return funcType
+				}
+			}
+		}
 	}
-
 	return nil
 }
 
