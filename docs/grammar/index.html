@@ -136,7 +136,45 @@ name
 <pre><code class="coral">package hello;
 </code></pre>
 
-<p>这有助于解决导入时可能造成的 "名字空间" 冲突等问题。</p>
+<p>一来能够使得 Coral 根据文件路径组织代码模块，
+二来这有助于解决导入时可能造成的 <strong>"名字空间"</strong> 冲突等问题。</p>
+<p>如何建立起各个文件模块之间的关系呢？Coral 并不想让这件事情有太多学习成本，
+以如下的项目文件结构为例：</p>
+<pre><code class="txt">├── server.coral  (声明 package app)
+├── routes.coral  (声明 package app)
+├── env.coral     (声明 package config)
+├── controllers/
+│      └── UserController.coral   (默认 package controllers)
+├── services/
+│      ├── SignInService.coral    (默认 package services)
+│      └── SignUpService.coral    (默认 package services)
+└── models/       (package models)
+       └── UserEntities/
+           ├── UserAccount.coral  (默认 package UserEntities)
+           └── UserProfile.coral  (默认 package UserEntities)
+
+</code></pre>
+
+<p>这是一个基础的 Web REST 后端服务，执行时主入口是 <code>server.coral</code>，所以包名是可以自定义的，例如为 <code>app</code>，
+包的声明不允许为 <code>something.else</code> 这样的链式结构。</p>
+<ul>
+<li>先解析同目录层级、<code>package</code> 也声明为 <code>app</code> 的 <code>routes.coral</code> 模块，
+而例如 <code>env.coral</code> 这样的，虽然同在一个目录层级，但由于包名不同，引入时就要加上包名前缀：</li>
+</ul>
+<pre><code class="coral">import routes;
+import config.env;  // 但我很确定 你不会给自己找这样的麻烦...
+</code></pre>
+
+<ul>
+<li>再解析深层级的，如果要引入 <code>controllers</code> 里的 <code>UserController.coral</code>，
+而 <code>UserController.coral</code> 则需要声明自己属于 <code>controllers</code> 包：</li>
+</ul>
+<pre><code class="coral">import controllers.UserController;  // 可以导入包内的单文件
+import models.UserEntities;         // 也可以倒入整个包
+</code></pre>
+
+<p>我们会添加 IDE 的支持，
+帮助你在某文件夹创建新的源代码文件时，自动声明其包名为文件夹名，如 GoLand 一样方便。</p>
 <h3 id="_4">编译目标</h3>
 <p>Coral 的目标是将 <code>.coral</code> 源代码编译到 <code>.cbytes</code> 字节码文件，然后通过虚拟机执行。</p>
 <p>我们倾向于让这门语言看上去像脚本语言一样，所以无需 <code>main()</code> 函数。</p>
@@ -152,6 +190,7 @@ println(msg);
 <h2 id="_6">注释</h2>
 <p>注释不会被编译，甚至在词法分析阶段就被忽略了。</p>
 <p>单行注释是最常见的注释形式，你可以在任何地方使用以 <code>//</code> 开头的单行注释。多行注释也叫块注释，均已以 <code>/*</code> 开头，并以 <code>*/</code> 结尾。如：</p>
+<p>块注释编译时允许嵌套，但最多 5 层，具体可查看源代码 <code>lexer</code> 部分的实现。</p>
 <pre><code class="coral">// 单行注释
 /*
  Author by 菜鸟教程
