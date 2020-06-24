@@ -20,8 +20,8 @@ type Analyzer struct {
 func InitAnalyzer(analyzer *Analyzer) {
 	analyzer.Parser.ParseProgram()      // 执行语法解析得到 AST
 	analyzer.BuiltInTypeNameInjection() // 注入内建类型名称
-	analyzer.InitBlockTable()           // 初始化区块表
-	analyzer.InitDisplay()              // 初始化显示表
+	analyzer.AppendBlockTable()         // 初始化第一张区块表
+	analyzer.AppendDisplay()            // 初始化第一张显示表
 
 	// 开始执行对 AST 的语法分析
 	analyzer.AnalyzeTree()
@@ -55,13 +55,13 @@ func (analyzer *Analyzer) BuiltInTypeNameInjection() {
 		prev = item // 将会作为下一元素的前驱
 	}
 }
-func (analyzer *Analyzer) InitBlockTable() {
+func (analyzer *Analyzer) AppendBlockTable() {
 	analyzer.BlockTable.PushBack(&BlockTableItem{
 		First: analyzer.NameTable.Front().Value.(*NameTableItem),
 		Last:  analyzer.NameTable.Back().Value.(*NameTableItem),
 	}) // 初始化名字表后直接记录
 }
-func (analyzer *Analyzer) InitDisplay() {
+func (analyzer *Analyzer) AppendDisplay() {
 	// 初始化显示表是：立即记录刚加入的第一个 BlockTableItem
 	analyzer.Display.PushBack(analyzer.BlockTable.Front())
 }
