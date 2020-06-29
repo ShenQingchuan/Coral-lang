@@ -279,11 +279,13 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 }
 
 func (parser *Parser) ParseImportElement() *ImportElement {
+	importElement := new(ImportElement)
+	if parser.MatchCurrentTokenType(TokenTypeDot) {
+		parser.PeekNextToken() // 移过点号
+		importElement.StartsWithDot = true
+	}
 	if moduleName := parser.ParseIdentifier(false); moduleName != nil {
-		importElement := &ImportElement{
-			ModuleName: moduleName,
-			As:         nil,
-		}
+		importElement.ModuleName = moduleName
 		if parser.MatchCurrentTokenType(TokenTypeAs) {
 			parser.PeekNextToken() // 移过 'as'
 			if asName := parser.ParseIdentifier(false); asName != nil {

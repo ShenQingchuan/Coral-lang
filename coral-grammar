@@ -27,7 +27,7 @@ packageStmt ::= package IDENTIFIER ';'
     }
 */
 moduleName ::= IDENTIFIER
-importElement ::= moduleName ('as' IDENTIFIER)?
+importElement ::= '.'? moduleName ('as' IDENTIFIER)?
 singleGlobalImport ::= 'import' importElement ';'
 importFrom ::= 'from' moduleName 'import' (importElement ';' | ('{' importElement (',' importElement)* '}'))
 importStmt ::= singleGlobalImport | importFrom

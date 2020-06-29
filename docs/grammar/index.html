@@ -140,41 +140,50 @@ name
 二来这有助于解决导入时可能造成的 <strong>"名字空间"</strong> 冲突等问题。</p>
 <p>如何建立起各个文件模块之间的关系呢？Coral 并不想让这件事情有太多学习成本，
 以如下的项目文件结构为例：</p>
-<pre><code class="txt">├── server.coral  (声明 package app)
-├── routes.coral  (声明 package app)
-├── env.coral     (声明 package config)
-├── controllers/
-│      └── UserController.coral   (默认 package controllers)
-├── services/
-│      ├── SignInService.coral    (默认 package services)
-│      └── SignUpService.coral    (默认 package services)
-└── models/       (package models)
-       └── UserEntities/
-           ├── UserAccount.coral  (默认 package UserEntities)
-           └── UserProfile.coral  (默认 package UserEntities)
+<pre><code class="txt">app/
+├── server.coral  (package app)
+├── routes.coral  (package app)
+├  --&gt; 在这个文件里如果声明的 package 不是 app 会报错，包索引不会识别
+│
+├── controllers/  &lt;-- app.controllers
+│      └── UserController.coral   (package controllers)
+│
+├── services/     &lt;-- app.services
+│      ├── SignInService.coral    (package services)
+│      └── SignUpService.coral    (package services)
+│
+└── models/       &lt;-- app.models
+       └── UserEntities/          &lt;-- app.models.UserEntities
+           ├── UserAccount.coral  (package UserEntities)
+           └── UserProfile.coral  (package UserEntities)
 
 </code></pre>
 
-<p>这是一个基础的 Web REST 后端服务，执行时主入口是 <code>server.coral</code>，所以包名是可以自定义的，例如为 <code>app</code>，
-包的声明不允许为 <code>something.else</code> 这样的链式结构。</p>
+<p>这是一个基础的 Web REST 后端服务，执行时主入口是 <code>server.coral</code>，整个项目文件夹名为 <code>app</code>。</p>
 <ul>
-<li>先解析同目录层级、<code>package</code> 也声明为 <code>app</code> 的 <code>routes.coral</code> 模块，
-而例如 <code>env.coral</code> 这样的，虽然同在一个目录层级，但由于包名不同，引入时就要加上包名前缀：</li>
+<li>首先解析最外层的根目录，再递归解析深层级的。</li>
 </ul>
-<pre><code class="coral">import routes;
-import config.env;  // 但我很确定 你不会给自己找这样的麻烦...
+<p>可以检索到 <code>server.coral</code> 和 <code>routes.coral</code> 两个文件模块，
+和 <code>controllers</code>、<code>services</code>、<code>models</code> 三个子包。</p>
+<p>所以在 <code>server.coral</code> 中你就可以这样引入路由模块：</p>
+<pre><code class="coral">import .routes;     // 用点号来表达相对路径
 </code></pre>
 
+<p>而在 <code>routes.coral</code> 中可能需要引入 <code>controllers</code> 中的模块：</p>
+<pre><code class="coral">import .controllers.UserController;
+</code></pre>
+
+<p>当然你也可以选择完整地引入一整个包，例如在注册帐号服务 <code>SignUpService.coral</code> 的代码中将引入用户相关的数据模型：</p>
+<pre><code class="coral">import app.models.UserEntities;
+</code></pre>
+
+<p>由于 <code>SignUpService.coral</code> 在很内部的位置，引入其他的包也就需要更长的索引链，
+而且都是相对于项目文件夹根目录来索引的。</p>
+<p><strong>我们会添加一些好用的 IDE 的支持：</strong></p>
 <ul>
-<li>再解析深层级的，如果要引入 <code>controllers</code> 里的 <code>UserController.coral</code>，
-而 <code>UserController.coral</code> 则需要声明自己属于 <code>controllers</code> 包：</li>
+<li>帮助你在某文件夹创建新的源代码文件时，自动声明其包名为文件夹名，如 GoLand 一样方便。</li>
+<li>在某项目文件下书写代码时，使用到某个变量、函数或类名，会视情况自动导入</li>
 </ul>
-<pre><code class="coral">import controllers.UserController;  // 可以导入包内的单文件
-import models.UserEntities;         // 也可以倒入整个包
-</code></pre>
-
-<p>我们会添加 IDE 的支持，
-帮助你在某文件夹创建新的源代码文件时，自动声明其包名为文件夹名，如 GoLand 一样方便。</p>
 <h3 id="_4">编译目标</h3>
 <p>Coral 的目标是将 <code>.coral</code> 源代码编译到 <code>.cbytes</code> 字节码文件，然后通过虚拟机执行。</p>
 <p>我们倾向于让这门语言看上去像脚本语言一样，所以无需 <code>main()</code> 函数。</p>

@@ -180,8 +180,9 @@ func (it *BlockStatement) StatementNodeType() int {
 
 // 引入语句单元
 type ImportElement struct {
-	ModuleName *Identifier
-	As         *Identifier
+	StartsWithDot bool
+	ModuleName    *Identifier
+	As            *Identifier
 }
 
 func (it *ImportElement) NodeType() string {

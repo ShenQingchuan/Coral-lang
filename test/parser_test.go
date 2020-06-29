@@ -424,14 +424,15 @@ func TestAssignListStatement(t *testing.T) {
 func TestImportStatement(t *testing.T) {
 	Convey("测试导入模块语句：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `import stdlib as std;`)
+		InitParserFromString(parser, `import .routes as r;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "import")
 
 		stmt := parser.ParseStatement()
 		singleGlobalImportStatement, isSingleGlobal := stmt.(*SingleGlobalImportStatement)
 		So(isSingleGlobal, ShouldEqual, true)
-		So(singleGlobalImportStatement.Element.ModuleName.GetName(), ShouldEqual, "stdlib")
-		So(singleGlobalImportStatement.Element.As.Token.Str, ShouldEqual, "std")
+		So(singleGlobalImportStatement.Element.StartsWithDot, ShouldEqual, true)
+		So(singleGlobalImportStatement.Element.ModuleName.GetName(), ShouldEqual, "routes")
+		So(singleGlobalImportStatement.Element.As.Token.Str, ShouldEqual, "r")
 	})
 
 	Convey("测试导入模块语句：2", t, func() {
