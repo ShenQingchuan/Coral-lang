@@ -11,7 +11,6 @@ import (
 
 type Parser struct {
 	Lexer   *Lexer
-	Program *Program
 
 	LastToken    *Token
 	CurrentToken *Token
@@ -78,14 +77,17 @@ func (parser *Parser) MatchCurrentTokenType(tokenType TokenType) bool {
 	return false
 }
 
-func (parser *Parser) ParseProgram() {
+func (parser *Parser) ParseProgram() *Program {
+	program := new(Program)
 	for stmt := parser.ParseStatement(); stmt != nil; stmt = parser.ParseStatement() {
 		// stmt 为 nil 的情况中其实早已被 CoralErrorCrashHandler 处理并退出了
-		parser.Program.Root = append(parser.Program.Root, stmt)
+		program.Root = append(program.Root, stmt)
 	}
 
-	if _, isPkgStmt := parser.Program.Root[0].(*PackageStatement); !isPkgStmt {
+	if _, isPkgStmt := program.Root[0].(*PackageStatement); !isPkgStmt {
 		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
 			"expected a package name for a source file as the first statement!", NoPackageNameDefinition))
 	}
+
+	return program
 }
