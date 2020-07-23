@@ -39,12 +39,12 @@ func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
 			for k := 0; k < 6; k++ {
 				fmt.Print(" ")
 			}
-			for j := 0; j < parser.LastToken.Col-1; j++ {
+			for j := 0; j < parser.LastToken.Col; j++ {
 				if !trimmed {
 					if lines[startLineIndex+i][j] == ' ' {
 						fmt.Print(" ")
 						continue
-					} else if !trimmed && lines[startLineIndex+i][j] == '\t' {
+					} else if lines[startLineIndex+i][j] == '\t' {
 						fmt.Print("  ")
 						continue
 					} else {
@@ -53,9 +53,9 @@ func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
 				}
 
 				if len(fmt.Sprintf("%c", lines[startLineIndex+i][j])) > 1 {
-					fmt.Print(Yellow("~~"))
+					fmt.Print(Yellow("∼∼"))
 				} else {
-					fmt.Print(Yellow("~"))
+					fmt.Print(Yellow("∼"))
 				}
 			}
 			fmt.Print(Red("^\n"))
