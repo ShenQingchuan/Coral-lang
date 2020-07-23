@@ -280,10 +280,6 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 
 func (parser *Parser) ParseImportElement() *ImportElement {
 	importElement := new(ImportElement)
-	if parser.MatchCurrentTokenType(TokenTypeDot) {
-		parser.PeekNextToken() // 移过点号
-		importElement.StartsWithDot = true
-	}
 	if moduleName := parser.ParseIdentifier(false); moduleName != nil {
 		importElement.ModuleName = moduleName
 		if parser.MatchCurrentTokenType(TokenTypeAs) {
@@ -323,7 +319,7 @@ func (parser *Parser) ParseImportElementList() []*ImportElement {
 func (parser *Parser) ParseImportStatement() ImportStatement {
 	if parser.MatchCurrentTokenType(TokenTypeFrom) {
 		parser.PeekNextToken() // 移过 'from'
-		if from := parser.ParseIdentifier(false); from != nil {
+		if from, isStringLit := parser.ParseLiteral().(*StringLit); isStringLit && from != nil {
 			if parser.MatchCurrentTokenType(TokenTypeImport) {
 				parser.PeekNextToken() // 移过 'import'
 				// 进入分支判断：
@@ -332,7 +328,7 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 					parser.PeekNextToken() // 移过 '{'
 					if elementList := parser.ParseImportElementList(); elementList != nil {
 						listImportStatement := &ListImportStatement{
-							From:     from,
+							From:     from.Value.Str,
 							Elements: elementList,
 						}
 
@@ -349,7 +345,7 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 					}
 				} else if importElement := parser.ParseImportElement(); importElement != nil {
 					singleImportStatement := new(SingleFromImportStatement)
-					singleImportStatement.From = from
+					singleImportStatement.From = from.Value.Str
 					singleImportStatement.Element = importElement
 					if parser.MatchCurrentTokenType(TokenTypeSemi) {
 						parser.PeekNextToken() // 移过 ';'
@@ -369,11 +365,23 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 		}
 	} else if parser.MatchCurrentTokenType(TokenTypeImport) {
 		parser.PeekNextToken() // 移过 'import'
-		if element := parser.ParseImportElement(); element != nil {
-			singleGlobalImport := &SingleGlobalImportStatement{Element: element}
+		if path, isStringLit := parser.ParseLiteral().(*StringLit); isStringLit && path != nil {
+			singleGlobalImport := &SingleGlobalImportStatement{Path: path.Value.Str}
+
+			if parser.MatchCurrentTokenType(TokenTypeAs) {
+				parser.PeekNextToken() // 移过 'as'
+
+				if as := parser.ParseIdentifier(false); as != nil {
+					singleGlobalImport.As = as
+				}
+			} // 可能有 as xxx 令别名
+
 			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
 				"to terminate a single global import statement!")
 			return singleGlobalImport
+		} else {
+			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				"expected a source file path for importee!", ParsingUnexpected))
 		}
 	}
 

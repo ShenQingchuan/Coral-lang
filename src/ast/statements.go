@@ -180,9 +180,8 @@ func (it *BlockStatement) StatementNodeType() int {
 
 // 引入语句单元
 type ImportElement struct {
-	StartsWithDot bool
-	ModuleName    *Identifier
-	As            *Identifier
+	ModuleName *Identifier
+	As         *Identifier
 }
 
 func (it *ImportElement) NodeType() string {
@@ -191,7 +190,8 @@ func (it *ImportElement) NodeType() string {
 
 // 直接 import 模块整体的语句
 type SingleGlobalImportStatement struct {
-	Element *ImportElement
+	Path string
+	As   *Identifier
 }
 
 func (it *SingleGlobalImportStatement) NodeType() string {
@@ -206,7 +206,7 @@ func (it *SingleGlobalImportStatement) StatementNodeType() int {
 
 // from 引入单个的语句
 type SingleFromImportStatement struct {
-	From    *Identifier
+	From    string
 	Element *ImportElement
 }
 
@@ -222,7 +222,7 @@ func (it *SingleFromImportStatement) StatementNodeType() int {
 
 // 集合引入语句
 type ListImportStatement struct {
-	From     *Identifier
+	From     string
 	Elements []*ImportElement
 }
 

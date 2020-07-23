@@ -23,7 +23,14 @@ type BlockTableItem struct {
 	Last  *NameTableItem
 }
 
-var StandardLibraries = []string{"stdlib", "math", "json", "regexp", "httplib", "orm"}
+var StandardLibraries = []string{
+	"stdlib",
+	"math",
+	"json",
+	"regexp",
+	"httplib",
+	"orm",
+}
 
 func isStandardLibrary(packageName string) bool {
 	for _, libName := range StandardLibraries {

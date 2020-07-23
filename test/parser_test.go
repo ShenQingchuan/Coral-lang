@@ -424,33 +424,32 @@ func TestAssignListStatement(t *testing.T) {
 func TestImportStatement(t *testing.T) {
 	Convey("测试导入模块语句：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `import .routes as r;`)
+		InitParserFromString(parser, `import "./routes" as r;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "import")
 
 		stmt := parser.ParseStatement()
 		singleGlobalImportStatement, isSingleGlobal := stmt.(*SingleGlobalImportStatement)
 		So(isSingleGlobal, ShouldEqual, true)
-		So(singleGlobalImportStatement.Element.StartsWithDot, ShouldEqual, true)
-		So(singleGlobalImportStatement.Element.ModuleName.GetName(), ShouldEqual, "routes")
-		So(singleGlobalImportStatement.Element.As.Token.Str, ShouldEqual, "r")
+		So(singleGlobalImportStatement.Path, ShouldEqual, "./routes")
+		So(singleGlobalImportStatement.As.Token.Str, ShouldEqual, "r")
 	})
 
 	Convey("测试导入模块语句：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `from httplib import Request as Req;`)
+		InitParserFromString(parser, `from "httplib" import Request as Req;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "from")
 
 		stmt := parser.ParseStatement()
 		singleImportStatement, isSingleImport := stmt.(*SingleFromImportStatement)
 		So(isSingleImport, ShouldEqual, true)
-		So(singleImportStatement.From.GetName(), ShouldEqual, "httplib")
+		So(singleImportStatement.From, ShouldEqual, "httplib")
 		So(singleImportStatement.Element.ModuleName.GetName(), ShouldEqual, "Request")
 		So(singleImportStatement.Element.As.Token.Str, ShouldEqual, "Req")
 	})
 
 	Convey("测试导入模块语句：3", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `from httplib import {
+		InitParserFromString(parser, `from "httplib" import {
       Request as Req,
 			Response as Resp
     }`)
@@ -458,7 +457,7 @@ func TestImportStatement(t *testing.T) {
 
 		listImportStatement, isListImport := parser.ParseStatement().(*ListImportStatement)
 		So(isListImport, ShouldEqual, true)
-		So(listImportStatement.From.GetName(), ShouldEqual, "httplib")
+		So(listImportStatement.From, ShouldEqual, "httplib")
 		So(listImportStatement.Elements[0].ModuleName.GetName(), ShouldEqual, "Request")
 		So(listImportStatement.Elements[0].As.Token.Str, ShouldEqual, "Req")
 		So(listImportStatement.Elements[1].ModuleName.GetName(), ShouldEqual, "Response")
