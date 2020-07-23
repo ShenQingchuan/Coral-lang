@@ -613,7 +613,7 @@ func (lexer *Lexer) SkipLineComment() {
 
 // 产出 Token，词法分析器的行号也移动字面值 s 的长度
 func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
-	lexer.Col += len(s)
+	lexer.Col += utf8.RuneCountInString(s)
 	// s 这个字符串的长度就是其中 UTF8 字符个数的长度
 	return &Token{
 		Line: lexer.Line,

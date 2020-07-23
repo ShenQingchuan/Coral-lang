@@ -501,8 +501,8 @@ func TestIfStatement(t *testing.T) {
 	Convey("测试条件语句解析：1", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, `if !screen.closed {
-			println("屏幕还没关！");
-    }`)
+      println("屏幕还没关！");
+		}`)
 		So(parser.CurrentToken.Str, ShouldEqual, "if")
 
 		ifStatement, isIfStmt := parser.ParseStatement().(*IfStatement)

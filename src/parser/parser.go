@@ -7,10 +7,11 @@ import (
 	. "coral-lang/src/utils"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Parser struct {
-	Lexer   *Lexer
+	Lexer *Lexer
 
 	LastToken    *Token
 	CurrentToken *Token
@@ -21,6 +22,46 @@ func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
 		fmt.Print("\n" + Green(fmt.Sprintf("* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)))
 	}
 	fmt.Println(c.Err)
+
+	// 打印错误代码所在行以及附近两行
+	lines := strings.Split(string(parser.Lexer.Content), "\n")
+	var startLineIndex int
+	if parser.LastToken.Line == 1 {
+		startLineIndex = 0
+	} else {
+		startLineIndex = parser.LastToken.Line - 2
+	}
+	for i := 0; i < 3; i++ {
+		fmt.Print(Yellow(fmt.Sprintf("%4d", startLineIndex+i+1)))
+		fmt.Printf("| %s\n", lines[startLineIndex+i])
+		if startLineIndex+i == parser.LastToken.Line-1 {
+			trimmed := false
+			for k := 0; k < 6; k++ {
+				fmt.Print(" ")
+			}
+			for j := 0; j < parser.LastToken.Col-1; j++ {
+				if !trimmed {
+					if lines[startLineIndex+i][j] == ' ' {
+						fmt.Print(" ")
+						continue
+					} else if !trimmed && lines[startLineIndex+i][j] == '\t' {
+						fmt.Print("  ")
+						continue
+					} else {
+						trimmed = true
+					}
+				}
+
+				if len(fmt.Sprintf("%c", lines[startLineIndex+i][j])) > 1 {
+					fmt.Print(Yellow("~~"))
+				} else {
+					fmt.Print(Yellow("~"))
+				}
+			}
+			fmt.Print(Red("^\n"))
+		}
+	}
+
 	fmt.Println("* " + Cyan(fmt.Sprintf("Error code: %d", c.ErrEnum)))
 	os.Exit(c.ErrEnum)
 }
