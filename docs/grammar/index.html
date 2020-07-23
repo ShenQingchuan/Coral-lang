@@ -57,7 +57,7 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#_2">文件概念</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#_3">包与模块</a>
+    <li class="toctree-l3"><a class="reference internal" href="#_3">模块化</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#_4">编译目标</a>
     </li>
@@ -131,61 +131,22 @@ name
 </code></pre>
 
 <h2 id="_2">文件概念</h2>
-<h3 id="_3">包与模块</h3>
-<p>coral 强制要求程序员在第一行声明当前的包名。</p>
-<pre><code class="coral">package hello;
-</code></pre>
-
-<p>一来能够使得 Coral 根据文件路径组织代码模块，
-二来这有助于解决导入时可能造成的 <strong>"名字空间"</strong> 冲突等问题。</p>
+<h3 id="_3">模块化</h3>
+<ol>
+<li>模块化能够使得 Coral 组织分散的代码模块，</li>
+<li>利用 <code>as</code> 命别名，有助于解决导入时可能造成的 <strong>"名字空间"</strong> 冲突等问题。</li>
+</ol>
 <p>如何建立起各个文件模块之间的关系呢？Coral 并不想让这件事情有太多学习成本，
-以如下的项目文件结构为例：</p>
-<pre><code class="txt">app/
-├── server.coral  (package app)
-├── routes.coral  (package app)
-├  --&gt; 在这个文件里如果声明的 package 不是 app 会报错，包索引不会识别
-│
-├── controllers/  &lt;-- app.controllers
-│      └── UserController.coral   (package controllers)
-│
-├── services/     &lt;-- app.services
-│      ├── SignInService.coral    (package services)
-│      └── SignUpService.coral    (package services)
-│
-├── models/       &lt;-- app.models
-│      └── UserEntities/          &lt;-- app.models.UserEntities
-│          ├── UserAccount.coral  (package UserEntities)
-│          └── UserProfile.coral  (package UserEntities)
-└── utils/        &lt;-- app.utils
-       └── constants.coral        (package utils)
-
+所以我们学习了 JavaScript 采用 "文件路径字符串" 来定位一个模块。</p>
+<p><strong>这里我们会有一些好用的 IDE 的支持...</strong></p>
+<pre><code>import &quot;math&quot;;                   // 标准库会被编译器自动识别
+import &quot;../src/routes.coral&quot;;    // 相对路径
+from &quot;math&quot; import pow;          // 提取部分导入
+from &quot;httplib&quot; import {
+    Request, Response
+}
 </code></pre>
 
-<p>这是一个基础的 Web REST 后端服务，执行时主入口是 <code>server.coral</code>，整个项目文件夹名为 <code>app</code>。</p>
-<ul>
-<li>首先解析最外层的根目录，再递归解析深层级的。</li>
-</ul>
-<p>可以检索到 <code>server.coral</code> 和 <code>routes.coral</code> 两个文件模块，
-和 <code>controllers</code>、<code>services</code>、<code>models</code> 三个子包。</p>
-<p>所以在 <code>server.coral</code> 中你就可以这样引入路由模块：</p>
-<pre><code class="coral">import .routes;     // 用点号来表达相对路径
-</code></pre>
-
-<p>而在 <code>routes.coral</code> 中可能需要引入 <code>controllers</code> 中的模块：</p>
-<pre><code class="coral">import .controllers.UserController;
-</code></pre>
-
-<p>当然你也可以选择完整地引入一整个包，例如在注册帐号服务 <code>SignUpService.coral</code> 的代码中将引入用户相关的数据模型：</p>
-<pre><code class="coral">import app.models.UserEntities;
-</code></pre>
-
-<p>由于 <code>SignUpService.coral</code> 在很内部的位置，引入其他的包也就需要更长的索引链，
-而且都是相对于项目文件夹根目录来索引的。</p>
-<p><strong>我们会添加一些好用的 IDE 的支持：</strong></p>
-<ul>
-<li>帮助你在某文件夹创建新的源代码文件时，自动声明其包名为文件夹名，如 GoLand 一样方便。</li>
-<li>在某项目文件下书写代码时，使用到某个变量、函数或类名，会视情况自动导入</li>
-</ul>
 <h3 id="_4">编译目标</h3>
 <p>Coral 的目标是将 <code>.coral</code> 源代码编译到 <code>.cbytes</code> 字节码文件，然后通过虚拟机执行。</p>
 <p>我们倾向于让这门语言看上去像脚本语言一样，所以无需 <code>main()</code> 函数。</p>

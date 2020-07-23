@@ -1,7 +1,5 @@
-package test;
-
-import stdlib;
-from httplib import {
+import "stdlib";
+from "httplib" import {
   Request  as Req,
   Response as Resp
 }

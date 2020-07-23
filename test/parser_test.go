@@ -105,7 +105,7 @@ func TestParseLiteral(t *testing.T) {
 	})
 }
 func TestBinaryExpression(t *testing.T) {
-	Convey("测试二元表达式：", t, func() {
+	Convey("测试二元表达式：1", t, func() {
 		parser := new(Parser)
 		InitParserFromString(parser, "num* 3+ 0x3f21")
 		So(parser.CurrentToken.Str, ShouldEqual, "num")
@@ -125,6 +125,20 @@ func TestBinaryExpression(t *testing.T) {
 		hex := binaryExpression.Right.(*BasicPrimaryExpression).It.(*HexadecimalLit)
 		So(hex.Value.Kind, ShouldEqual, TokenTypeHexadecimalInteger)
 		So(hex.Value.Str, ShouldEqual, "0x3f21")
+	})
+
+	Convey("测试二元表达式：1", t, func() {
+		parser := new(Parser)
+		InitParserFromString(parser, "n * (n+ 1)/ 2")
+		So(parser.CurrentToken.Str, ShouldEqual, "n")
+
+		binaryExpression, isBinary := parser.ParseExpression().(*BinaryExpression)
+		So(isBinary, ShouldEqual, true)
+
+		So(binaryExpression.Operator.Kind, ShouldEqual, TokenTypeStar)
+		So(binaryExpression.Left.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(), ShouldEqual, "n")
+		So(binaryExpression.Right.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeSlash)
+		So(binaryExpression.Right.(*BinaryExpression).Left.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypePlus)
 	})
 }
 func TestCastExpression(t *testing.T) {

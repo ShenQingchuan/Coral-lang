@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	. "container/list"
-	. "coral-lang/src/ast"
 )
 
 // 国防科技大学：《编译原理》教学 [P37 - 符号表与作用域分析]
@@ -48,4 +47,3 @@ func (analyzer *Analyzer) AppendDisplay() {
 	// 初始化 "显示层表" 时：立即记录刚加入的第一个 BlockTableItem
 	analyzer.Display.PushBack(analyzer.BlockTable.Front())
 }
-
