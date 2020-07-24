@@ -432,7 +432,7 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 			case '"':
 				str += "\""
 				lexer.GoNextCharByStep(2)
-			case 'u', 'U':
+			case 'u':
 				// Unicode 需要是：\uXXXX 格式：
 				lexer.GoNextCharByStep(2) // 移过当前的 '\u'
 				unicodeBitCount := 0
@@ -444,7 +444,9 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 				}
 				if unicodeBitCount != 4 {
 					// 说明不满 4 位，解码出错
-					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can'Token decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
+					return nil, NewCoralError("Syntax",
+						"(unicode error) 'unicodeEscape' codec can'Token decode bytes in position 0-3: truncated \\uXXXX escape",
+						LexUnicodeEscapeFormatError)
 				}
 				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 4)
 				str += gotUTF8Decoded
