@@ -117,7 +117,8 @@
             <div class="section">
               
                 <h1 id="_1">基础语法</h1>
-<p>Coral 程序可以由多个标记组成，可以是关键字，标识符，常量，字符串，符号。如以下语句由 6 个标记组成：</p>
+<p>Coral 程序可以由多个标记组成，可以是关键字，标识符，常量，字符串，符号。</p>
+<p>如以下语句由 6 个标记（Token）组成：</p>
 <pre><code class="coral">println(&quot;My name is &quot; + name)
 </code></pre>
 
@@ -247,7 +248,11 @@ myname50  _temp   j     a23b9       retVal
 </tr>
 <tr>
 <td><code>\uXXXX</code></td>
-<td>16进制 Unicode 字符</td>
+<td>4位 16进制 Unicode 字符</td>
+</tr>
+<tr>
+<td><code>\xXX</code></td>
+<td>2位 16进制 Unicode 字符</td>
 </tr>
 </tbody>
 </table>
