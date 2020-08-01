@@ -125,10 +125,5 @@ func (parser *Parser) ParseProgram() *Program {
 		program.Root = append(program.Root, stmt)
 	}
 
-	if _, isPkgStmt := program.Root[0].(*PackageStatement); !isPkgStmt {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-			"expected a package name for a source file as the first statement!", NoPackageNameDefinition))
-	}
-
 	return program
 }

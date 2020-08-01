@@ -952,17 +952,6 @@ func TestTryCatchStatement(t *testing.T) {
 		So(tryCatchStmt.Finally.Statements[0].(*CallExpression).Params[0].(*BasicPrimaryExpression).It.(*StringLit).Value.Str, ShouldEqual, "hahaha, it's ok")
 	})
 }
-func TestPackageStatement(t *testing.T) {
-	Convey("测试包名定义语句：", t, func() {
-		parser := new(Parser)
-		InitParserFromString(parser, `package test;`)
-		So(parser.CurrentToken.Str, ShouldEqual, "package")
-
-		pkgStmt, isPkg := parser.ParseStatement().(*PackageStatement)
-		So(isPkg, ShouldEqual, true)
-		So(pkgStmt.Name.GetName(), ShouldEqual, "test")
-	})
-}
 func TestTypeDescriptions(t *testing.T) {
 	Convey("*补充* - 测试解析类型声明 & 一条语句的 lambda：", t, func() {
 		parser := new(Parser)
