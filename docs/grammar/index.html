@@ -59,7 +59,7 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#_3">模块化</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#_4">编译目标</a>
+    <li class="toctree-l3"><a class="reference internal" href="#_4">编译与运行</a>
     </li>
         </ul>
     </li>
@@ -148,10 +148,11 @@ from &quot;httplib&quot; import {
 }
 </code></pre>
 
-<h3 id="_4">编译目标</h3>
+<h3 id="_4">编译与运行</h3>
 <p>Coral 的目标是将 <code>.coral</code> 源代码编译到 <code>.cbytes</code> 字节码文件，然后通过虚拟机执行。</p>
 <p>我们倾向于让这门语言看上去像脚本语言一样，所以无需 <code>main()</code> 函数。</p>
-<pre><code class="bash">coral out.cbytes
+<pre><code class="bash"># 运行源代码
+coral run hello.cr
 </code></pre>
 
 <h2 id="_5">终结分隔符</h2>
