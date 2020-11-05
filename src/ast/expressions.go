@@ -423,7 +423,7 @@ func (it *CallExpression) StatementNodeType() int {
 
 // 成员链表节点 同时也是 AST 节点
 type MemberLinkNode struct {
-	Operand    *Identifier
+	It         *Identifier
 	MemberNext *MemberLinkNode
 }
 

@@ -14,24 +14,25 @@ enum Sex {
   这是一段块注释：
   一个自己实现的链表节点类
 */
-class LinkedListNode<T> {
+class LinkedListNode<T> : Node<T> <- Iterable {
   var value T;
   var next  LinkedListNode;
 }
 
-class Person {
+class Person : Animal {
   var name string;  // 姓名
   var sex Sex;      // 性别
   var age int;      // 年龄
 
   fn Person(name string, sex Sex, age int) {
+    super();
     this.name = name;
     this.sex = sex;
     this.age = age;
   }
 
   fn greet() {
-    printf("Hello! my name is %s", this.name);
+    printf("Hello! my name is %s \u3E4f \x3c", this.name);
   }
 }
 
@@ -49,7 +50,7 @@ each name in ["Peter", "John", "汤姆"] {
 }
 
 fn createEquation(a, b, c double) (double) -> double {
-  return (x) -> a * pow(x, 2) + b * x + c
+  return (x) -> a * pow(x, 2) + b * x + c;
 }
 
 friends.forEach((f) -> {

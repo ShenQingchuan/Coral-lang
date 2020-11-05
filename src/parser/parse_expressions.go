@@ -234,7 +234,7 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 			memberExpression.Member = new(MemberLinkNode)
 			cursor := memberExpression.Member // 开始根据得到的 标识符列表构建成员链
 			for i, id := range idList {
-				cursor.Operand = id
+				cursor.It = id
 				if i != len(idList)-1 {
 					cursor.MemberNext = new(MemberLinkNode) // 结链
 					cursor = cursor.MemberNext              // -> next

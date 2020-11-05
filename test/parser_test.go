@@ -11,7 +11,7 @@ import (
 func TestParseLiteral(t *testing.T) {
 	Convey("测试解析字面量值：十进制", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "8997")
+		parser.InitFromString("8997")
 		So(parser.CurrentToken.Str, ShouldEqual, "8997")
 
 		a := parser.ParseLiteral()
@@ -21,7 +21,7 @@ func TestParseLiteral(t *testing.T) {
 
 	Convey("测试解析字面量值：浮点数", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "3.11")
+		parser.InitFromString("3.11")
 		So(parser.CurrentToken.Str, ShouldEqual, "3.11")
 
 		a := parser.ParseLiteral()
@@ -31,7 +31,7 @@ func TestParseLiteral(t *testing.T) {
 
 	Convey("测试解析字面量值：含e科学记数法的指数", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "3.63e-2")
+		parser.InitFromString("3.63e-2")
 		So(parser.CurrentToken.Str, ShouldEqual, "3.63e-2")
 
 		a := parser.ParseLiteral()
@@ -41,7 +41,7 @@ func TestParseLiteral(t *testing.T) {
 
 	Convey("测试解析字面量值：数组字面量", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "[1,44, 9, 65]")
+		parser.InitFromString("[1,44, 9, 65]")
 		So(parser.CurrentToken.Str, ShouldEqual, "[")
 
 		a := parser.ParseLiteral()
@@ -51,7 +51,7 @@ func TestParseLiteral(t *testing.T) {
 
 	Convey("测试解析字面量值：映射表字面量", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `{
+		parser.InitFromString(`{
 			key1: 1+33,
 			mama: Color.Dark,
 		}`)
@@ -71,7 +71,7 @@ func TestParseLiteral(t *testing.T) {
 
 	Convey("测试解析字面量值：lambda", t, func() {
 		parser1 := new(Parser)
-		InitParserFromString(parser1, `
+		parser1.InitFromString(`
 		var a = (m ,n int) float -> {
 			println((m+n) * 2);
 		};`)
@@ -90,7 +90,7 @@ func TestParseLiteral(t *testing.T) {
 			ShouldEqual, "println")
 
 		parser2 := new(Parser)
-		InitParserFromString(parser2, `
+		parser2.InitFromString(`
 		friends.forEach((f) -> {
 			f.greet();
 		});`)
@@ -98,7 +98,7 @@ func TestParseLiteral(t *testing.T) {
 
 		call, isCall := parser2.ParseStatement().(*CallExpression)
 		So(isCall, ShouldEqual, true)
-		So(call.Operand.(*MemberExpression).Member.Operand.Token.Str,
+		So(call.Operand.(*MemberExpression).Member.It.Token.Str,
 			ShouldEqual, "forEach")
 		So(call.Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str,
 			ShouldEqual, "f")
@@ -107,7 +107,7 @@ func TestParseLiteral(t *testing.T) {
 func TestBinaryExpression(t *testing.T) {
 	Convey("测试二元表达式：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "num* 3+ 0x3f21")
+		parser.InitFromString("num* 3+ 0x3f21")
 		So(parser.CurrentToken.Str, ShouldEqual, "num")
 
 		binaryExpression, isBinary := parser.ParseExpression().(*BinaryExpression)
@@ -129,7 +129,7 @@ func TestBinaryExpression(t *testing.T) {
 
 	Convey("测试二元表达式：2 · 带括号", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "n * (n+ 1)/ 2")
+		parser.InitFromString("n * (n+ 1)/ 2")
 		So(parser.CurrentToken.Str, ShouldEqual, "n")
 
 		binaryExpression, isBinary := parser.ParseExpression().(*BinaryExpression)
@@ -143,7 +143,7 @@ func TestBinaryExpression(t *testing.T) {
 
 	Convey("测试二元表达式：3 · 类型强转", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "(23.7 as int) == 23")
+		parser.InitFromString("(23.7 as int) == 23")
 		So(parser.CurrentToken.Str, ShouldEqual, "(")
 
 		binaryExpression, isBinary := parser.ParseExpression().(*BinaryExpression)
@@ -157,7 +157,7 @@ func TestBinaryExpression(t *testing.T) {
 func TestCastExpression(t *testing.T) {
 	Convey("测试类型强转表达式：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "(3.1415 as float64)")
+		parser.InitFromString("(3.1415 as float64)")
 		So(parser.CurrentToken.Str, ShouldEqual, "(")
 
 		castExpression, isCast := parser.ParseExpression().(*CastExpression)
@@ -173,7 +173,7 @@ func TestCastExpression(t *testing.T) {
 func TestRangeExpression(t *testing.T) {
 	Convey("测试区间表达式：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "0..arr.length")
+		parser.InitFromString("0..arr.length")
 		So(parser.CurrentToken.Str, ShouldEqual, "0")
 
 		rangeExpression, isRange := parser.ParseExpression().(*RangeExpression)
@@ -183,14 +183,14 @@ func TestRangeExpression(t *testing.T) {
 		So(rangeExpression.Start.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str, ShouldEqual, "0")
 		So(rangeExpression.End.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"arr")
-		So(rangeExpression.End.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual, "length")
+		So(rangeExpression.End.(*MemberExpression).Member.It.Token.Str, ShouldEqual, "length")
 		So(rangeExpression.End.(*MemberExpression).Member.MemberNext, ShouldEqual, nil)
 	})
 }
 func TestIndexSliceCallMemberExpression(t *testing.T) {
 	Convey("测试索引表达式：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "arr[i]")
+		parser.InitFromString("arr[i]")
 		So(parser.CurrentToken.Str, ShouldEqual, "arr")
 
 		indexExpression, isIndex := parser.ParseExpression().(*IndexExpression)
@@ -204,7 +204,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 
 	Convey("测试切片表达式 1：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "arr[:4]")
+		parser.InitFromString("arr[:4]")
 		So(parser.CurrentToken.Str, ShouldEqual, "arr")
 
 		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
@@ -218,7 +218,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 
 	Convey("测试切片表达式 2：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "arr[kk:5]")
+		parser.InitFromString("arr[kk:5]")
 		So(parser.CurrentToken.Str, ShouldEqual, "arr")
 
 		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
@@ -234,7 +234,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 
 	Convey("测试函数调用表达式：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "funcA(i, 3.11)")
+		parser.InitFromString("funcA(i, 3.11)")
 		So(parser.CurrentToken.Str, ShouldEqual, "funcA")
 
 		callExpression, isCall := parser.ParseExpression().(*CallExpression)
@@ -251,7 +251,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 	Convey("测试函数调用时、参数为 lambda 的类型自动推导 (Parser 部分体现为允许 无类型标注)：",
 		t, func() {
 			parser := new(Parser)
-			InitParserFromString(parser, `friends.forEach((f) -> {
+			parser.InitFromString(`friends.forEach((f) -> {
 			f.greet();
 		})`)
 			So(parser.CurrentToken.Str, ShouldEqual, "friends")
@@ -260,7 +260,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 			So(isCall, ShouldEqual, true)
 			So(callExpression.Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str,
 				ShouldEqual, "friends")
-			So(callExpression.Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual, "forEach")
+			So(callExpression.Operand.(*MemberExpression).Member.It.Token.Str, ShouldEqual, "forEach")
 			So(callExpression.Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str,
 				ShouldEqual, "f")
 			So(callExpression.Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Type,
@@ -269,7 +269,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 
 	Convey("测试成员访问表达式：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "request.query.page")
+		parser.InitFromString("request.query.page")
 		So(parser.CurrentToken.Str, ShouldEqual, "request")
 
 		memberExpression, isMemberExpr := parser.ParseExpression().(*MemberExpression)
@@ -277,13 +277,13 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 
 		So(memberExpression.Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "request")
-		So(memberExpression.Member.Operand.Token.Str, ShouldEqual, "query")
-		So(memberExpression.Member.MemberNext.Operand.Token.Str, ShouldEqual, "page")
+		So(memberExpression.Member.It.Token.Str, ShouldEqual, "query")
+		So(memberExpression.Member.MemberNext.It.Token.Str, ShouldEqual, "page")
 	})
 
 	Convey("混合测试", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "makeArr(dd +7, 3.11e2)[mm:6]")
+		parser.InitFromString("makeArr(dd +7, 3.11e2)[mm:6]")
 		So(parser.CurrentToken.Str, ShouldEqual, "makeArr")
 
 		sliceExpression, isSlice := parser.ParseExpression().(*SliceExpression)
@@ -309,7 +309,7 @@ func TestIndexSliceCallMemberExpression(t *testing.T) {
 func TestVarValDeclarationStatement(t *testing.T) {
 	Convey("测试变量定义：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "var a int[] = [6, 7, 11];")
+		parser.InitFromString("var a int[] = [6, 7, 11];")
 		So(parser.CurrentToken.Str, ShouldEqual, "var")
 
 		varDeclStatement, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
@@ -324,9 +324,9 @@ func TestVarValDeclarationStatement(t *testing.T) {
 			"6")
 	})
 
-	Convey("测试变量定义：1", t, func() {
+	Convey("测试变量定义：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "var a rune[3] = ['c', 'd', '我'];")
+		parser.InitFromString("var a rune[3] = ['c', 'd', '我'];")
 		So(parser.CurrentToken.Str, ShouldEqual, "var")
 
 		varDeclStatement, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
@@ -343,9 +343,9 @@ func TestVarValDeclarationStatement(t *testing.T) {
 			"我")
 	})
 
-	Convey("测试变量定义：2", t, func() {
+	Convey("测试变量定义：3", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "val 圆周率 = 3.14, 光速 = 3e8;")
+		parser.InitFromString("val 圆周率 = 3.14, 光速 = 3e8;")
 		So(parser.CurrentToken.Str, ShouldEqual, "val")
 
 		varDeclStatement, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
@@ -368,7 +368,7 @@ func TestVarValDeclarationStatement(t *testing.T) {
 func TestUnaryExpression(t *testing.T) {
 	Convey("测试单目运算符解析：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "!m.tt&&~ss.k[1]")
+		parser.InitFromString("!m.tt&&~ss.k[1]")
 		So(parser.CurrentToken.Str, ShouldEqual, "!")
 
 		binaryExpression, isBinary := parser.ParseExpression().(*BinaryExpression)
@@ -380,7 +380,7 @@ func TestUnaryExpression(t *testing.T) {
 		So(leftUnary.Operator.Kind, ShouldEqual, TokenTypeBang)
 		So(leftUnary.Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "m")
-		So(leftUnary.Operand.(*MemberExpression).Member.Operand.Token.Str,
+		So(leftUnary.Operand.(*MemberExpression).Member.It.Token.Str,
 			ShouldEqual, "tt")
 
 		rightUnary, isRightUnary := binaryExpression.Right.(*UnaryExpression)
@@ -388,7 +388,7 @@ func TestUnaryExpression(t *testing.T) {
 		So(rightUnary.Operator.Kind, ShouldEqual, TokenTypeWavy)
 		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).GetFullName(),
 			ShouldEqual, "ss")
-		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Member.Operand.Token.Str,
+		So(rightUnary.Operand.(*IndexExpression).Operand.(*MemberExpression).Member.It.Token.Str,
 			ShouldEqual, "k")
 		So(rightUnary.Operand.(*IndexExpression).Index.(*BasicPrimaryExpression).It.(*DecimalLit).Value.Str,
 			ShouldEqual, "1")
@@ -397,7 +397,7 @@ func TestUnaryExpression(t *testing.T) {
 func TestNewInstanceExpression(t *testing.T) {
 	Convey("测试对象实例新建表达式：无泛型参数", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `new Student("Peter", 18)`)
+		parser.InitFromString(`new Student("Peter", 18)`)
 		So(parser.CurrentToken.Str, ShouldEqual, "new")
 
 		newInstanceExpression, isNewInstance := parser.ParseExpression().(*NewInstanceExpression)
@@ -413,7 +413,7 @@ func TestNewInstanceExpression(t *testing.T) {
 
 	Convey("测试对象实例新建表达式：含泛型参数", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, "new Array<string>(3)")
+		parser.InitFromString("new Array<string>(3)")
 		So(parser.CurrentToken.Str, ShouldEqual, "new")
 
 		newInstanceExpression, isNewInstance := parser.ParseExpression().(*NewInstanceExpression)
@@ -430,7 +430,7 @@ func TestNewInstanceExpression(t *testing.T) {
 func TestAssignListStatement(t *testing.T) {
 	Convey("测试赋值列表：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `num_a, x[1]= 3, "hello";`)
+		parser.InitFromString(`num_a, x[1]= 3, "hello";`)
 		So(parser.CurrentToken.Str, ShouldEqual, "num_a")
 
 		assignListStmt, isAssignList := parser.ParseStatement().(*AssignListStatement)
@@ -451,7 +451,7 @@ func TestAssignListStatement(t *testing.T) {
 func TestImportStatement(t *testing.T) {
 	Convey("测试导入模块语句：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `import "./routes" as r;`)
+		parser.InitFromString(`import "./routes" as r;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "import")
 
 		stmt := parser.ParseStatement()
@@ -463,7 +463,7 @@ func TestImportStatement(t *testing.T) {
 
 	Convey("测试导入模块语句：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `from "httplib" import Request as Req;`)
+		parser.InitFromString(`from "httplib" import Request as Req;`)
 		So(parser.CurrentToken.Str, ShouldEqual, "from")
 
 		stmt := parser.ParseStatement()
@@ -476,7 +476,7 @@ func TestImportStatement(t *testing.T) {
 
 	Convey("测试导入模块语句：3", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `from "httplib" import {
+		parser.InitFromString(`from "httplib" import {
       Request as Req,
 			Response as Resp
     }`)
@@ -494,7 +494,7 @@ func TestImportStatement(t *testing.T) {
 func TestEnumStatement(t *testing.T) {
 	Convey("测试枚举定义语句解析：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `enum Sex {
+		parser.InitFromString(`enum Sex {
         FEMALE = 0,
         MALE,
         SECRET
@@ -513,7 +513,7 @@ func TestEnumStatement(t *testing.T) {
 func TestIfStatement(t *testing.T) {
 	Convey("测试条件语句解析：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `if !screen.closed {
+		parser.InitFromString(`if !screen.closed {
       println("屏幕还没关！");
 		}`)
 		So(parser.CurrentToken.Str, ShouldEqual, "if")
@@ -524,7 +524,7 @@ func TestIfStatement(t *testing.T) {
 		So(ifStatement.If.Condition.(*UnaryExpression).Operator.Kind, ShouldEqual, TokenTypeBang)
 		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"screen")
-		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.It.Token.Str, ShouldEqual,
 			"closed")
 		So(ifStatement.If.Condition.(*UnaryExpression).Operand.(*MemberExpression).Member.MemberNext, ShouldEqual,
 			nil)
@@ -536,7 +536,7 @@ func TestIfStatement(t *testing.T) {
 
 	Convey("测试条件语句解析：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `if t.getYear() == 2020 {
+		parser.InitFromString(`if t.getYear() == 2020 {
 			wawa++;
     } elif m.what > 3.55 {
 			x, y = 1.3e6, 'Z';
@@ -550,7 +550,7 @@ func TestIfStatement(t *testing.T) {
 
 		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"t")
-		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+		So(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Operand.(*MemberExpression).Member.It.Token.Str, ShouldEqual,
 			"getYear")
 		So(len(ifStatement.If.Condition.(*BinaryExpression).Left.(*CallExpression).Params), ShouldEqual,
 			0)
@@ -561,7 +561,7 @@ func TestIfStatement(t *testing.T) {
 		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeRightAngle)
 		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"m")
-		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Left.(*MemberExpression).Member.It.Token.Str, ShouldEqual,
 			"what")
 		So(ifStatement.Elif[0].Condition.(*BinaryExpression).Right.(*BasicPrimaryExpression).It.(*FloatLit).Value.Str, ShouldEqual,
 			"3.55")
@@ -588,7 +588,7 @@ func TestIfStatement(t *testing.T) {
 func TestSwitchStatement(t *testing.T) {
 	Convey("测试分支语句: ", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `switch tom.grade {
+		parser.InitFromString(`switch tom.grade {
         default {
             println("incorrect grade number!");
         }
@@ -605,7 +605,7 @@ func TestSwitchStatement(t *testing.T) {
 		So(isSwitch, ShouldEqual, true)
 		So(switchStatement.Entry.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"tom")
-		So(switchStatement.Entry.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+		So(switchStatement.Entry.(*MemberExpression).Member.It.Token.Str, ShouldEqual,
 			"grade")
 		So(switchStatement.Default.Statements[0].(*CallExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"println")
@@ -638,7 +638,7 @@ func TestSwitchStatement(t *testing.T) {
 func TestWhileStatement(t *testing.T) {
 	Convey("测试 while 循环解析：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `while num < 10 {
+		parser.InitFromString(`while num < 10 {
 			println(num);
 			num++;
 			if num > 3 {
@@ -681,7 +681,7 @@ func TestWhileStatement(t *testing.T) {
 func TestForStatement(t *testing.T) {
 	Convey("测试 for 循环语句：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `for var i = 0, j = arr.length; i <= j; i++, j-- {
+		parser.InitFromString(`for var i = 0, j = arr.length; i <= j; i++, j-- {
       println(i + j);
     }`)
 		So(parser.CurrentToken.Str, ShouldEqual, "for")
@@ -698,7 +698,7 @@ func TestForStatement(t *testing.T) {
 			"j")
 		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"arr")
-		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+		So(forStatement.Initial.(*VarDeclStatement).Declarations[1].InitValue.(*MemberExpression).Member.It.Token.Str, ShouldEqual,
 			"length")
 
 		So(forStatement.Condition.(*BinaryExpression).Operator.Kind, ShouldEqual, TokenTypeLeftAngleEqual)
@@ -717,7 +717,7 @@ func TestForStatement(t *testing.T) {
 
 	Convey("测试 for 循环语句：无初始化、无尾缀操作", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `for ;i < arr.length; {
+		parser.InitFromString(`for ;i < arr.length; {
       println(arr[i]);
     }`)
 		So(parser.CurrentToken.Str, ShouldEqual, "for")
@@ -732,7 +732,7 @@ func TestForStatement(t *testing.T) {
 			"i")
 		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Operand.(*BasicPrimaryExpression).It.(*OperandName).Name.Token.Str, ShouldEqual,
 			"arr")
-		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Member.Operand.Token.Str, ShouldEqual,
+		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Member.It.Token.Str, ShouldEqual,
 			"length")
 		So(forStatement.Condition.(*BinaryExpression).Right.(*MemberExpression).Member.MemberNext, ShouldEqual,
 			nil)
@@ -743,7 +743,7 @@ func TestForStatement(t *testing.T) {
 func TestEachStatement(t *testing.T) {
 	Convey("测试 each 循环语句：1 无 key", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `each num in [1,4,5,99] {
+		parser.InitFromString(`each num in [1,4,5,99] {
 			println(num);
 		}`)
 		So(parser.CurrentToken.Str, ShouldEqual, "each")
@@ -758,7 +758,7 @@ func TestEachStatement(t *testing.T) {
 
 	Convey("测试 each 循环语句：2 有 key", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `each num, i in [1,4,5,99] {
+		parser.InitFromString(`each num, i in [1,4,5,99] {
 			println("No." + i + num);
 		}`)
 		So(parser.CurrentToken.Str, ShouldEqual, "each")
@@ -774,7 +774,7 @@ func TestEachStatement(t *testing.T) {
 func TestFnStatement(t *testing.T) {
 	Convey("测试函数定义语句：1", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `fn fibonacci(n int) int {
+		parser.InitFromString(`fn fibonacci(n int) int {
         var a = n % 2, b = 1;
         for var i = 0; i < n/2; i++ {
             a += b;
@@ -796,7 +796,7 @@ func TestFnStatement(t *testing.T) {
 
 	Convey("测试函数定义语句：2", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `fn initMapWithAPair<T, K>(
+		parser.InitFromString(`fn initMapWithAPair<T, K>(
 			n1 T, 
 			n2 K
 		) Map<T, K>, bool throws NullPointerException {
@@ -827,7 +827,7 @@ func TestFnStatement(t *testing.T) {
 func TestClassStatement(t *testing.T) {
 	Convey("测试类定义语句：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `class VideoDisk<T, K> : Disk<K> <- Playable<T> {
+		parser.InitFromString(`class VideoDisk<T, K> : Disk<K> <- Playable<T> {
         var time Date,
 						movieName string,
         		movieDirector string,
@@ -895,7 +895,7 @@ func TestClassStatement(t *testing.T) {
 func TestInterfaceStatement(t *testing.T) {
 	Convey("测试接口定义语句：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `interface A<T> : B<T> {
+		parser.InitFromString(`interface A<T> : B<T> {
         public  fn cc<T>() string throws MMException;
         private fn dd() int;
     }`)
@@ -923,7 +923,7 @@ func TestInterfaceStatement(t *testing.T) {
 func TestTryCatchStatement(t *testing.T) {
 	Convey("测试接口定义语句：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `try {
+		parser.InitFromString(`try {
 			val n = 3 / 0;
     } catch e MathException {
 			println(e.message());
@@ -955,7 +955,7 @@ func TestTryCatchStatement(t *testing.T) {
 func TestTypeDescriptions(t *testing.T) {
 	Convey("*补充* - 测试解析类型声明 & 一条语句的 lambda：", t, func() {
 		parser := new(Parser)
-		InitParserFromString(parser, `
+		parser.InitFromString(`
 		fn createEquation(a, b, c double) (double) -> double {
 			return (x) -> a * pow(x, 2) + b * x + c;
 		}

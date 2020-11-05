@@ -17,7 +17,7 @@ import (
 func TestPeekChar(t *testing.T) {
 	content := OpenSourceFile("samples/test.coral")
 	testLexer := &Lexer{}
-	InitLexerFromBytes(testLexer, content)
+	testLexer.InitFromBytes(content)
 
 	Convey("测试 PeekChar：", t, func() {
 		firstUtf8Char := testLexer.PeekChar()
@@ -27,7 +27,7 @@ func TestPeekChar(t *testing.T) {
 func TestPeekNextChar(t *testing.T) {
 	content := OpenSourceFile("samples/test.coral")
 	testLexer := &Lexer{}
-	InitLexerFromBytes(testLexer, content)
+	testLexer.InitFromBytes(content)
 
 	Convey("测试 PeekNextChar：", t, func() {
 		firstUtf8Char := testLexer.PeekChar()
@@ -38,7 +38,7 @@ func TestPeekNextChar(t *testing.T) {
 func TestPeekNextCharByStep(t *testing.T) {
 	content := OpenSourceFile("samples/test.coral")
 	testLexer := &Lexer{}
-	InitLexerFromBytes(testLexer, content)
+	testLexer.InitFromBytes(content)
 
 	Convey("测试 PeekNextCharByStep：", t, func() {
 		firstUtf8Char := testLexer.PeekChar()
@@ -49,7 +49,7 @@ func TestPeekNextCharByStep(t *testing.T) {
 func TestGoNextChar(t *testing.T) {
 	content := OpenSourceFile("samples/test.coral")
 	testLexer := &Lexer{}
-	InitLexerFromBytes(testLexer, content)
+	testLexer.InitFromBytes(content)
 
 	Convey("测试 GoNextChar", t, func() {
 		testLexer.GoNextCharByStep(3)
@@ -58,7 +58,7 @@ func TestGoNextChar(t *testing.T) {
 }
 func TestReadDecimal(t *testing.T) {
 	testLexer1 := &Lexer{}
-	InitLexerFromString(testLexer1, "386")
+	testLexer1.InitFromString("386")
 
 	Convey("测试读入十进制整数：normal", t, func() {
 		gotToken, err := testLexer1.ReadDecimal(false)
@@ -70,7 +70,7 @@ func TestReadDecimal(t *testing.T) {
 	})
 
 	testLexer2 := &Lexer{}
-	InitLexerFromString(testLexer2, "000186")
+	testLexer2.InitFromString("000186")
 
 	Convey("测试读入十进制整数：more zero", t, func() {
 		gotToken, err := testLexer2.ReadDecimal(true)
@@ -83,7 +83,7 @@ func TestReadDecimal(t *testing.T) {
 }
 func TestReadFloat(t *testing.T) {
 	successLexer := &Lexer{}
-	InitLexerFromString(successLexer, "3.5681")
+	successLexer.InitFromString("3.5681")
 
 	Convey("读入小数: success", t, func() {
 		gotToken, err := successLexer.ReadDecimal(false)
@@ -96,7 +96,7 @@ func TestReadFloat(t *testing.T) {
 	})
 
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "000.186")
+	testLexer.InitFromString("000.186")
 
 	Convey("测试读入零开头的小数：", t, func() {
 		gotToken, err := testLexer.ReadDecimal(true)
@@ -108,7 +108,7 @@ func TestReadFloat(t *testing.T) {
 	})
 
 	failLexer := &Lexer{}
-	InitLexerFromString(failLexer, "3.56.81")
+	failLexer.InitFromString("3.56.81")
 	Convey("读入小数: error", t, func() {
 		_, err := failLexer.ReadDecimal(true)
 		So(err.ErrEnum, ShouldEqual, LexFloatFormatError)
@@ -116,7 +116,7 @@ func TestReadFloat(t *testing.T) {
 }
 func TestReadExponent(t *testing.T) {
 	successLexer := &Lexer{}
-	InitLexerFromString(successLexer, "1.7e+2")
+	successLexer.InitFromString("1.7e+2")
 
 	Convey("读入科学记数法: success", t, func() {
 		gotToken, err := successLexer.ReadDecimal(false)
@@ -128,14 +128,14 @@ func TestReadExponent(t *testing.T) {
 	})
 
 	failLexer := &Lexer{}
-	InitLexerFromString(failLexer, "5.4e-2e08")
+	failLexer.InitFromString("5.4e-2e08")
 	Convey("读入科学记数法: error", t, func() {
 		_, err := failLexer.ReadDecimal(false)
 		So(err.ErrEnum, ShouldEqual, LexExponentFormatError)
 	})
 
 	failLexer2 := &Lexer{}
-	InitLexerFromString(failLexer2, "0e-5")
+	failLexer2.InitFromString("0e-5")
 	Convey("无意义的 0e 开头：", t, func() {
 		_, err := failLexer2.ReadDecimal(true)
 		So(err.ErrEnum, ShouldEqual, LexExponentFormatError)
@@ -143,7 +143,7 @@ func TestReadExponent(t *testing.T) {
 }
 func TestReadHexadecimal(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "0xEf012a")
+	testLexer.InitFromString("0xEf012a")
 
 	Convey("测试读入十六进制整数", t, func() {
 		gotToken, err := testLexer.ReadHexadecimal()
@@ -156,7 +156,7 @@ func TestReadHexadecimal(t *testing.T) {
 }
 func TestReadBinary(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "0b101001")
+	testLexer.InitFromString("0b101001")
 
 	Convey("测试读入二进制整数", t, func() {
 		gotToken, err := testLexer.ReadBinary()
@@ -169,7 +169,7 @@ func TestReadBinary(t *testing.T) {
 }
 func TestReadOctal(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "0o1073")
+	testLexer.InitFromString("0o1073")
 
 	Convey("测试读入八进制整数", t, func() {
 		gotToken, err := testLexer.ReadOctal()
@@ -182,7 +182,7 @@ func TestReadOctal(t *testing.T) {
 }
 func TestReadString(t *testing.T) {
 	testLexer1 := &Lexer{}
-	InitLexerFromString(testLexer1, "\"我就是\\t想装个逼：\\u77e5道unicode是这样的\"")
+	testLexer1.InitFromString("\"我就是\\t想装个逼：\\u77e5道unicode是这样的\"")
 
 	Convey("测试读入字符串（支持转义 \\u 字符）", t, func() {
 		gotToken, err := testLexer1.ReadString()
@@ -194,7 +194,7 @@ func TestReadString(t *testing.T) {
 	})
 
 	testLexer2 := &Lexer{}
-	InitLexerFromString(testLexer2, "\"来个单的：\\xD688\"")
+	testLexer2.InitFromString("\"来个单的：\\xD688\"")
 
 	Convey("测试读入字符串（支持转义 \\x 字符）", t, func() {
 		gotToken, err := testLexer2.ReadString()
@@ -206,7 +206,7 @@ func TestReadString(t *testing.T) {
 	})
 
 	failLexer := &Lexer{}
-	InitLexerFromString(failLexer, "\"\\u332\"")
+	failLexer.InitFromString("\"\\u332\"")
 	Convey("测试读入unicode编码但不足4位报错: error", t, func() {
 		_, err := failLexer.ReadString()
 		So(err.ErrEnum, ShouldEqual, LexUnicodeEscapeFormatError)
@@ -215,7 +215,7 @@ func TestReadString(t *testing.T) {
 func TestReadRune(t *testing.T) {
 	Convey("测试读入字符 1", t, func() {
 		testLexer := &Lexer{}
-		InitLexerFromString(testLexer, "'Z'")
+		testLexer.InitFromString("'Z'")
 		gotToken, err := testLexer.ReadRune()
 		if err != nil {
 			CoralErrorCrashHandler(err)
@@ -226,7 +226,7 @@ func TestReadRune(t *testing.T) {
 
 	Convey("测试读入字符 2：支持转义字符", t, func() {
 		testLexer := &Lexer{}
-		InitLexerFromString(testLexer, "'\\u94F8'")
+		testLexer.InitFromString("'\\u94F8'")
 		gotToken, err := testLexer.ReadRune()
 		if err != nil {
 			CoralErrorCrashHandler(err)
@@ -237,7 +237,7 @@ func TestReadRune(t *testing.T) {
 }
 func TestReadIdentifierAscii(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "num_x")
+	testLexer.InitFromString("num_x")
 
 	Convey("测试读入标识符: ascii", t, func() {
 		gotToken, err := testLexer.ReadIdentifier()
@@ -250,7 +250,7 @@ func TestReadIdentifierAscii(t *testing.T) {
 }
 func TestReadIdentifierUTF8(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "大π∆变量1")
+	testLexer.InitFromString("大π∆变量1")
 
 	Convey("测试读入标识符: UTF8", t, func() {
 		gotToken, err := testLexer.ReadIdentifier()
@@ -263,7 +263,7 @@ func TestReadIdentifierUTF8(t *testing.T) {
 }
 func TestReadIdentifierButItIsKeyword(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "var")
+	testLexer.InitFromString("var")
 
 	Convey("测试读入关键字：", t, func() {
 		gotToken, err := testLexer.ReadIdentifier()
@@ -276,7 +276,7 @@ func TestReadIdentifierButItIsKeyword(t *testing.T) {
 }
 func TestReadIdentifierThrowError(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, "2un√π")
+	testLexer.InitFromString("2un√π")
 	Convey("测试读入标识符: error", t, func() {
 		_, err := testLexer.ReadIdentifier()
 		So(err.ErrEnum, ShouldEqual, LexIdentifierFirstRuneCanNotBeDigit)
@@ -284,7 +284,7 @@ func TestReadIdentifierThrowError(t *testing.T) {
 }
 func TestSkipLineComment(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, `
+	testLexer.InitFromString(`
 	// this is a line comment
   val
 	`)
@@ -300,7 +300,7 @@ func TestSkipLineComment(t *testing.T) {
 }
 func TestSkipBlockComment(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, `
+	testLexer.InitFromString(`
 	/* this is a block comment
      line two
      line three, oh my god it works !
@@ -319,7 +319,7 @@ func TestSkipBlockComment(t *testing.T) {
 }
 func TestUnclosedException(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, `(([{])}`)
+	testLexer.InitFromString(`(([{])}`)
 
 	Convey("测试括号未匹配报错：", t, func() {
 		count := 0
@@ -336,7 +336,7 @@ func TestUnclosedException(t *testing.T) {
 // 大测试：给一段源代码来生成 token 流
 func TestGetNextToken(t *testing.T) {
 	testLexer := &Lexer{}
-	InitLexerFromString(testLexer, `
+	testLexer.InitFromString(`
 	from httplib import {
 	 	HttpRequest as req
   }

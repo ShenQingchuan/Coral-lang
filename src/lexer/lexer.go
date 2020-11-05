@@ -150,7 +150,7 @@ func OpenSourceFile(filePath string) []byte {
 }
 
 // 初始化词法分析器
-func InitLexerCommonOperations(lexer *Lexer) {
+func (lexer *Lexer) InitLexerCommonOperations() {
 	lexer.Line = 1
 	lexer.Col = 1
 	lexer.BytePos = 0
@@ -198,13 +198,13 @@ func InitLexerCommonOperations(lexer *Lexer) {
 		"throws":    TokenTypeThrows,
 	}
 }
-func InitLexerFromString(lexer *Lexer, content string) {
+func (lexer *Lexer) InitFromString(content string) {
 	lexer.Content = []byte(content)
-	InitLexerCommonOperations(lexer)
+	lexer.InitLexerCommonOperations()
 }
-func InitLexerFromBytes(lexer *Lexer, content []byte) {
+func (lexer *Lexer) InitFromBytes(content []byte) {
 	lexer.Content = content
-	InitLexerCommonOperations(lexer)
+	lexer.InitLexerCommonOperations()
 }
 
 func (lexer *Lexer) ResetBytePos(i int) {

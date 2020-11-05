@@ -12,3 +12,6 @@ class Dog : Animal {
     printf("Hi, I'm a %s dog named %s!", this.color, this.name);
   }
 }
+
+var d1 = new Dog("John", 6, "#bbb");
+d1.greet();

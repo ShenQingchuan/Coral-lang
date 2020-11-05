@@ -667,11 +667,8 @@ func (parser *Parser) ParseForStatement() *ForStatement {
 			parser.AssertCurrentTokenIs(TokenTypeSemi, "the second semicolon", "in for clause!")
 
 			if parser.MatchCurrentTokenType(TokenTypeLeftBrace) {
-				CoralCompileWarningWithPos(parser, `a "for" loop only defined with condition, consider using
-	while condition {
-		... 
-	}
-instead. After the second semicolon in "for" statement cannot write any table literal value!!`)
+				CoralCompileWarningWithPos(parser, `a "for" loop only defined with condition, consider using 
+while condition { ... } instead.`)
 			} else {
 				for appendix := parser.ParseSimpleStatement(false); appendix != nil; appendix = parser.ParseSimpleStatement(false) {
 					forStatement.Appendix = append(forStatement.Appendix, appendix)

@@ -31,7 +31,7 @@ func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
 	} else {
 		startLineIndex = parser.LastToken.Line - 2
 	}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 3 && (startLineIndex+i) < len(lines); i++ {
 		fmt.Print(Yellow(fmt.Sprintf("%4d", startLineIndex+i+1)))
 		fmt.Printf("| %s\n", lines[startLineIndex+i])
 		if startLineIndex+i == parser.LastToken.Line-1 {
@@ -52,13 +52,9 @@ func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
 					}
 				}
 
-				if len(fmt.Sprintf("%c", lines[startLineIndex+i][j])) > 1 {
-					fmt.Print(Yellow("∼∼"))
-				} else {
-					fmt.Print(Yellow("∼"))
-				}
+				fmt.Print(Yellow("∼"))
 			}
-			fmt.Print(Red("^\n"))
+			fmt.Print(Red("^") + "\n")
 		}
 	}
 
@@ -72,14 +68,14 @@ func CoralCompileWarningWithPos(parser *Parser, msg string) {
 	CoralCompileWarning(msg)
 }
 
-func InitParserFromBytes(parser *Parser, content []byte) {
+func (parser *Parser) InitFromBytes(content []byte) {
 	parser.Lexer = new(Lexer)
-	InitLexerFromBytes(parser.Lexer, content)
+	parser.Lexer.InitFromBytes(content)
 	parser.PeekNextToken() // 统一获取到第一个 Token
 }
-func InitParserFromString(parser *Parser, content string) {
+func (parser *Parser) InitFromString(content string) {
 	parser.Lexer = new(Lexer)
-	InitLexerFromString(parser.Lexer, content)
+	parser.Lexer.InitFromString(content)
 	parser.PeekNextToken() // 统一获取到第一个 Token
 }
 func (parser *Parser) AssertCurrentTokenIs(tokenType TokenType, expected string, situation string) {

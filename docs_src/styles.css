@@ -1,0 +1,31 @@
+table {
+    margin: 0 0 20px 0;
+}
+
+/* Table Head */
+table thead th {
+    background-color: #2980B9;
+    color: #fff;
+    border-bottom-width: 0;
+    font-size: 16px;
+}
+
+/* Column Style */
+table td {
+    color: #000;
+}
+/* Heading and Column Style */
+table tr, table th {
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(156, 186, 95);
+}
+
+/* Padding and font style */
+table td, table th {
+    padding: 5px 10px;
+}
+
+.wy-nav-content {
+    max-width: 1000px;
+}
