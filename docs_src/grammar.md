@@ -33,7 +33,7 @@ name
 
 ```
 import "math";                   // 标准库会被编译器自动识别
-import "../src/routes.coral";    // 相对路径
+import "../src/routes.cr";    // 相对路径
 from "math" import pow;          // 提取部分导入
 from "httplib" import {
     Request, Response
@@ -97,7 +97,7 @@ myname50  _temp   j     a23b9       retVal
 
 ## 关键字
 
-下面列举了 Coral 代码中可能会使用到的所有关键字或保留字：
+下面列举了 Coral 代码中可能会使用到的所有关键字和保留字：
 
 ```txt
  import    from         as         enum       break  

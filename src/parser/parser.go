@@ -6,7 +6,6 @@ import (
 	. "coral-lang/src/lexer"
 	. "coral-lang/src/utils"
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -15,9 +14,12 @@ type Parser struct {
 
 	LastToken    *Token
 	CurrentToken *Token
+
+	ErrCount  int
+	WarnCount int
 }
 
-func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
+func CoralCompileErrorWithPos(parser *Parser, c *CoralCompileError) {
 	if parser.LastToken != nil {
 		fmt.Print("\n" + Green(fmt.Sprintf("* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)))
 	}
@@ -59,13 +61,14 @@ func CoralErrorCrashHandlerWithPos(parser *Parser, c *CoralError) {
 	}
 
 	fmt.Println("* " + Cyan(fmt.Sprintf("Error code: %d", c.ErrEnum)))
-	os.Exit(c.ErrEnum)
+	parser.ErrCount++
 }
 func CoralCompileWarningWithPos(parser *Parser, msg string) {
 	if parser.LastToken != nil {
 		fmt.Print("\n" + Green(fmt.Sprintf("* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)))
 	}
 	CoralCompileWarning(msg)
+	parser.WarnCount++
 }
 
 func (parser *Parser) InitFromBytes(content []byte) {
@@ -78,13 +81,14 @@ func (parser *Parser) InitFromString(content string) {
 	parser.Lexer.InitFromString(content)
 	parser.PeekNextToken() // 统一获取到第一个 Token
 }
-func (parser *Parser) AssertCurrentTokenIs(tokenType TokenType, expected string, situation string) {
-	if parser.MatchCurrentTokenType(tokenType) {
-		parser.PeekNextToken()
-	} else {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+func (parser *Parser) AssertCurrentTokenIs(tokenType TokenType, expected string, situation string) bool {
+	if !parser.MatchCurrentTokenType(tokenType) {
+		CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 			fmt.Sprintf("expected %s %s!", expected, situation), ParsingUnexpected))
+		return false
 	}
+	parser.PeekNextToken()
+	return true
 }
 func (parser *Parser) PeekNextToken() {
 	token, err := parser.Lexer.GetNextToken(true)
@@ -121,5 +125,6 @@ func (parser *Parser) ParseProgram() *Program {
 		program.Root = append(program.Root, stmt)
 	}
 
+	fmt.Println("\n" + Yellow(fmt.Sprintf("(total %d error, %d warning)", parser.ErrCount, parser.WarnCount)))
 	return program
 }

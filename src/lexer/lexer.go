@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	TokenTypeUnknown = iota
-	TokenTypeImport
+	TokenTypeImport = iota
 	TokenTypePackage
 	TokenTypeFrom
 	TokenTypeAs
@@ -289,7 +288,7 @@ func (uchar *UTF8Char) IsLegalBinary() bool {
 }
 
 // 读出一个十六进制整数的 Token
-func (lexer *Lexer) ReadHexadecimal() (*Token, *CoralError) {
+func (lexer *Lexer) ReadHexadecimal() (*Token, *CoralCompileError) {
 	lexer.GoNextCharByStep(2) // skip '0x'
 	str := "0x"
 
@@ -301,7 +300,7 @@ func (lexer *Lexer) ReadHexadecimal() (*Token, *CoralError) {
 }
 
 // 读出一个八进制整数的 Token
-func (lexer *Lexer) ReadOctal() (*Token, *CoralError) {
+func (lexer *Lexer) ReadOctal() (*Token, *CoralCompileError) {
 	lexer.GoNextCharByStep(2) // 跳过 '0o'
 	str := "0o"
 	for lexer.PeekChar().IsLegalOctal() {
@@ -312,7 +311,7 @@ func (lexer *Lexer) ReadOctal() (*Token, *CoralError) {
 }
 
 // 读出一个二进制整数的 Token
-func (lexer *Lexer) ReadBinary() (*Token, *CoralError) {
+func (lexer *Lexer) ReadBinary() (*Token, *CoralCompileError) {
 	lexer.GoNextCharByStep(2) // 跳过 '0o'
 	str := "0b"
 	for lexer.PeekChar().IsLegalBinary() {
@@ -323,7 +322,7 @@ func (lexer *Lexer) ReadBinary() (*Token, *CoralError) {
 }
 
 // 读出一个十进制整数 或 小数/科学记数法 Token
-func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
+func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralCompileError) {
 	var str string
 	hadPoint := false
 	hadETag := false
@@ -401,7 +400,7 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralError) {
 }
 
 // 读出一个字符串，含转义字符的处理
-func (lexer *Lexer) ReadString() (*Token, *CoralError) {
+func (lexer *Lexer) ReadString() (*Token, *CoralCompileError) {
 	var str string
 	lexer.GoNextChar() // 移过当前的 '"' 双引号
 
@@ -475,7 +474,7 @@ func (lexer *Lexer) ReadString() (*Token, *CoralError) {
 }
 
 // 读出一个字符，含转义字符的处理
-func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
+func (lexer *Lexer) ReadRune() (*Token, *CoralCompileError) {
 	var str string
 	lexer.GoNextChar() // 移过当前的 ' 双引号
 
@@ -547,7 +546,7 @@ func (lexer *Lexer) ReadRune() (*Token, *CoralError) {
 	return lexer.makeToken(TokenTypeRune, str), nil
 }
 
-func (lexer *Lexer) ReadIdentifier() (*Token, *CoralError) {
+func (lexer *Lexer) ReadIdentifier() (*Token, *CoralCompileError) {
 	// 保证第一位不为数字
 	firstRuneMatcher := regexp.MustCompile(`[0-9]`) // 第一个字符一定不会是 switch 条件上的操作符、空白符等
 	restRuneMatcher := regexp.MustCompile(`[ \t\n;:,(){}\[\].=!*/%^|&><+\-'"]`)
@@ -574,7 +573,7 @@ func (lexer *Lexer) ReadIdentifier() (*Token, *CoralError) {
 }
 
 // 跳过块注释
-func (lexer *Lexer) SkipBlockComment() *CoralError {
+func (lexer *Lexer) SkipBlockComment() *CoralCompileError {
 	lexer.GoNextCharByStep(2) // 跳过 "/*"
 	nested := 1               // 初始嵌套层次为 1
 
@@ -626,7 +625,7 @@ func (lexer *Lexer) makeToken(t TokenType, s string) *Token {
 }
 
 // 词法分析器获取下一个 Token
-func (lexer *Lexer) GetNextToken(avoidAngleConfusing bool) (*Token, *CoralError) {
+func (lexer *Lexer) GetNextToken(avoidAngleConfusing bool) (*Token, *CoralCompileError) {
 	for lexer.BytePos < len(lexer.Content) {
 		c := lexer.PeekChar()
 		switch c.Rune {

@@ -97,8 +97,10 @@ func (parser *Parser) ParseExpression() Expression {
 			parser.Lexer.BytePos = currentLexerPos // 如果不是 lambda 恢复词法器位置
 			parser.PeekNextToken()                 // 移过左括号
 			inParenExpression := parser.ParseExpression()
-			parser.AssertCurrentTokenIs(TokenTypeRightParen,
-				"right parenthesis", "to close a parenthesis expression!")
+			if !parser.AssertCurrentTokenIs(TokenTypeRightParen,
+				"right parenthesis", "to close a parenthesis expression!") {
+				return nil
+			}
 			return parser.TryParseBinaryExpression(inParenExpression)
 		}
 	}
@@ -203,8 +205,9 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 	} else if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		// try: call
 		if isSlice {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"slice expression can't be called/executed as a function!", ParsingUnexpected))
+			return nil
 		}
 		parser.PeekNextToken() // 移过当前的左括号，到下一个 token
 		callExpression := new(CallExpression)
@@ -223,8 +226,9 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 			parser.PeekNextToken()
 			return parser.TryEnhancePrimaryExpression(callExpression)
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a right parenthesis for function calling!", ParsingUnexpected))
+			return nil
 		}
 	} else if parser.MatchCurrentTokenType(TokenTypeDot) {
 		parser.PeekNextToken() // 移过 '.' 点，到下一个 token
@@ -243,8 +247,9 @@ func (parser *Parser) TryEnhancePrimaryExpression(basic PrimaryExpression) Prima
 
 			return parser.TryEnhancePrimaryExpression(memberExpression)
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a member identifier list after dot!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -257,14 +262,17 @@ func (parser *Parser) ParseTableElement() *TableElement {
 		tableElement.Key = &Identifier{Token: parser.CurrentToken}
 		parser.PeekNextToken() // 移过标识符
 
-		parser.AssertCurrentTokenIs(TokenTypeColon, "a colon",
-			"in map literal element to separate key and value!")
+		if !parser.AssertCurrentTokenIs(TokenTypeColon, "a colon",
+			"in map literal element to separate key and value!") {
+			return nil
+		}
 		if value := parser.ParseExpression(); value != nil {
 			tableElement.Value = value
 			return tableElement
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an expression as value in map literal element!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -273,115 +281,123 @@ func (parser *Parser) ParseTableElement() *TableElement {
 
 // 解析 operand 的 literal 情况
 func (parser *Parser) ParseLiteral() Literal {
-	switch parser.CurrentToken.Kind {
-	default:
-		return nil
-	case TokenTypeString:
-		defer parser.PeekNextToken()
-		return &StringLit{Value: parser.CurrentToken}
-	case TokenTypeRune:
-		defer parser.PeekNextToken()
-		return &RuneLit{Value: parser.CurrentToken}
-	case TokenTypeDecimalInteger:
-		defer parser.PeekNextToken()
-		return &DecimalLit{Value: parser.CurrentToken}
-	case TokenTypeHexadecimalInteger:
-		defer parser.PeekNextToken()
-		return &HexadecimalLit{Value: parser.CurrentToken}
-	case TokenTypeOctalInteger:
-		defer parser.PeekNextToken()
-		return &OctalLit{Value: parser.CurrentToken}
-	case TokenTypeBinaryInteger:
-		defer parser.PeekNextToken()
-		return &BinaryLit{Value: parser.CurrentToken}
-	case TokenTypeFloat:
-		defer parser.PeekNextToken()
-		valueToken := parser.CurrentToken
-		floatLit := new(FloatLit)
-		floatLit.Value = valueToken
-		if reg := regexp.MustCompile(`\.(\d+)$`); len(reg.FindString(parser.CurrentToken.Str))-1 > 6 && len(reg.FindString(parser.CurrentToken.Str))-1 <= 15 {
-			floatLit.Accuracy = 15
-		} else {
-			floatLit.Accuracy = 6
-		}
-		return floatLit
-	case TokenTypeExponent:
-		defer parser.PeekNextToken()
-		return &ExponentLit{Value: parser.CurrentToken}
-	case TokenTypeNil:
-		defer parser.PeekNextToken()
-		return &NilLit{Value: parser.CurrentToken}
-	case TokenTypeTrue:
-		defer parser.PeekNextToken()
-		return &TrueLit{Value: parser.CurrentToken}
-	case TokenTypeFalse:
-		defer parser.PeekNextToken()
-		return &FalseLit{Value: parser.CurrentToken}
-	case TokenTypeLeftBracket:
-		parser.PeekNextToken() // 移过 '['
-		var expressionList []Expression
-		for expression := parser.ParseExpression(); expression != nil; expression = parser.ParseExpression() {
-			expressionList = append(expressionList, expression)
-
-			if parser.MatchCurrentTokenType(TokenTypeComma) {
-				parser.PeekNextToken()
+	if parser.CurrentToken != nil {
+		switch parser.CurrentToken.Kind {
+		case TokenTypeString:
+			defer parser.PeekNextToken()
+			return &StringLit{Value: parser.CurrentToken}
+		case TokenTypeRune:
+			defer parser.PeekNextToken()
+			return &RuneLit{Value: parser.CurrentToken}
+		case TokenTypeDecimalInteger:
+			defer parser.PeekNextToken()
+			return &DecimalLit{Value: parser.CurrentToken}
+		case TokenTypeHexadecimalInteger:
+			defer parser.PeekNextToken()
+			return &HexadecimalLit{Value: parser.CurrentToken}
+		case TokenTypeOctalInteger:
+			defer parser.PeekNextToken()
+			return &OctalLit{Value: parser.CurrentToken}
+		case TokenTypeBinaryInteger:
+			defer parser.PeekNextToken()
+			return &BinaryLit{Value: parser.CurrentToken}
+		case TokenTypeFloat:
+			defer parser.PeekNextToken()
+			valueToken := parser.CurrentToken
+			floatLit := new(FloatLit)
+			floatLit.Value = valueToken
+			if reg := regexp.MustCompile(`\.(\d+)$`); len(reg.FindString(parser.CurrentToken.Str))-1 > 6 && len(reg.FindString(parser.CurrentToken.Str))-1 <= 15 {
+				floatLit.Accuracy = 15
 			} else {
-				break
+				floatLit.Accuracy = 6
 			}
-		}
-		parser.AssertCurrentTokenIs(TokenTypeRightBracket, "right bracket",
-			"to close the array literal value!")
-		return &ArrayLit{ValueList: expressionList}
-	case TokenTypeLeftBrace:
-		parser.PeekNextToken() // 移过 '{'
-		var elements []*TableElement
-		for tableElement := parser.ParseTableElement(); tableElement != nil; tableElement = parser.ParseTableElement() {
-			elements = append(elements, tableElement)
+			return floatLit
+		case TokenTypeExponent:
+			defer parser.PeekNextToken()
+			return &ExponentLit{Value: parser.CurrentToken}
+		case TokenTypeNil:
+			defer parser.PeekNextToken()
+			return &NilLit{Value: parser.CurrentToken}
+		case TokenTypeTrue:
+			defer parser.PeekNextToken()
+			return &TrueLit{Value: parser.CurrentToken}
+		case TokenTypeFalse:
+			defer parser.PeekNextToken()
+			return &FalseLit{Value: parser.CurrentToken}
+		case TokenTypeLeftBracket:
+			parser.PeekNextToken() // 移过 '['
+			var expressionList []Expression
+			for expression := parser.ParseExpression(); expression != nil; expression = parser.ParseExpression() {
+				expressionList = append(expressionList, expression)
 
-			if parser.MatchCurrentTokenType(TokenTypeComma) {
-				parser.PeekNextToken() // 移过 ','
-			} else {
-				break
-			}
-		}
-		parser.AssertCurrentTokenIs(TokenTypeRightBrace, "right brace",
-			"in map literal definition!")
-		return &TableLit{KeyValueList: elements}
-	case TokenTypeLeftParen:
-		if signature := parser.ParseSignature(true); signature != nil {
-			lambdaLit := new(LambdaLit)
-			lambdaLit.Signature = signature
-			if parser.MatchCurrentTokenType(TokenTypeRightArrow) {
-				parser.PeekNextToken() // 移过尖头
-				if lambdaBlock := parser.ParseBlockStatement(); lambdaBlock != nil {
-					lambdaLit.Result = lambdaBlock
-					return lambdaLit
-				} else if lambdaExpr := parser.ParseExpression(); lambdaExpr != nil {
-					lambdaLit.Result = lambdaExpr
-					return lambdaLit
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextToken()
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-						"expected a block for lambda lambda function!", ParsingUnexpected))
+					break
 				}
-			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-					"expected a right arrow '->' for lambda function!", ParsingUnexpected))
 			}
-		}
-		return nil
-	case TokenTypeThis:
-		defer parser.PeekNextToken()
-		return &ThisLit{
-			Token:     parser.CurrentToken,
-			BelongsTo: nil,
-		}
-	case TokenTypeSuper:
-		defer parser.PeekNextToken()
-		return &SuperLit{
-			Token:     parser.CurrentToken,
-			BelongsTo: nil,
+			if !parser.AssertCurrentTokenIs(TokenTypeRightBracket, "right bracket",
+				"to close the array literal value!") {
+				return nil
+			}
+			return &ArrayLit{ValueList: expressionList}
+		case TokenTypeLeftBrace:
+			parser.PeekNextToken() // 移过 '{'
+			var elements []*TableElement
+			for tableElement := parser.ParseTableElement(); tableElement != nil; tableElement = parser.ParseTableElement() {
+				elements = append(elements, tableElement)
+
+				if parser.MatchCurrentTokenType(TokenTypeComma) {
+					parser.PeekNextToken() // 移过 ','
+				} else {
+					break
+				}
+			}
+			if !parser.AssertCurrentTokenIs(TokenTypeRightBrace, "right brace",
+				"in map literal definition!") {
+				return nil
+			}
+			return &TableLit{KeyValueList: elements}
+		case TokenTypeLeftParen:
+			if signature := parser.ParseSignature(true); signature != nil {
+				lambdaLit := new(LambdaLit)
+				lambdaLit.Signature = signature
+				if parser.MatchCurrentTokenType(TokenTypeRightArrow) {
+					parser.PeekNextToken() // 移过尖头
+					if lambdaBlock := parser.ParseBlockStatement(); lambdaBlock != nil {
+						lambdaLit.Result = lambdaBlock
+						return lambdaLit
+					} else if lambdaExpr := parser.ParseExpression(); lambdaExpr != nil {
+						lambdaLit.Result = lambdaExpr
+						return lambdaLit
+					} else {
+						CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
+							"expected a block for lambda lambda function!", ParsingUnexpected))
+						return nil
+					}
+				} else {
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
+						"expected a right arrow '->' for lambda function!", ParsingUnexpected))
+					return nil
+				}
+			}
+			return nil
+		case TokenTypeThis:
+			defer parser.PeekNextToken()
+			return &ThisLit{
+				Token:     parser.CurrentToken,
+				BelongsTo: nil,
+			}
+		case TokenTypeSuper:
+			defer parser.PeekNextToken()
+			return &SuperLit{
+				Token:     parser.CurrentToken,
+				BelongsTo: nil,
+			}
 		}
 	}
+
+	return nil
 }
 
 // 解析 operand 的 operandName（变量名）情况
@@ -407,8 +423,9 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 	parser.PeekNextToken()
 	typeDescription := parser.ParseTypeDescription()
 	if typeDescription == nil {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+		CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 			"expected a type description for object instance creating!", ParsingUnexpected))
+		return nil
 	}
 	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		parser.PeekNextToken() // 移过当前的左括号，到下一个 token
@@ -419,7 +436,10 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 			if parser.MatchCurrentTokenType(TokenTypeRightParen) {
 				break
 			} else {
-				parser.AssertCurrentTokenIs(TokenTypeComma, "a comma", "in new object instance constructor")
+				if !parser.AssertCurrentTokenIs(TokenTypeComma,
+					"a comma", "in new object instance constructor") {
+					return nil
+				}
 			}
 		}
 		// 结束循环时，检测是否停留于 token ')'
@@ -427,31 +447,34 @@ func (parser *Parser) ParseNewInstanceExpression() *NewInstanceExpression {
 			parser.PeekNextToken() // 移过 ')'
 			return newInstanceExpression
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a right parenthesis for constructor method's ending!", ParsingUnexpected))
+			return nil
 		}
 	} else {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+		CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 			"expected a left parenthesis for constructor method's calling!", ParsingUnexpected))
+		return nil
 	}
-
-	return nil
 }
 
 // 解析 单目表达式
 func (parser *Parser) ParseUnaryExpression() *UnaryExpression {
-	switch parser.CurrentToken.Kind {
-	case TokenTypeMinus, TokenTypeBang, TokenTypeWavy:
-		unaryExpression := new(UnaryExpression)
-		unaryExpression.Operator = parser.CurrentToken
-		parser.PeekNextToken() // 移过该单目运算符
+	if parser.CurrentToken != nil {
+		switch parser.CurrentToken.Kind {
+		case TokenTypeMinus, TokenTypeBang, TokenTypeWavy:
+			unaryExpression := new(UnaryExpression)
+			unaryExpression.Operator = parser.CurrentToken
+			parser.PeekNextToken() // 移过该单目运算符
 
-		if operand := parser.ParsePrimaryExpression(); operand != nil {
-			unaryExpression.Operand = operand
-			return unaryExpression
-		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
-				"missing operand for unary expression!", ParsingUnexpected))
+			if operand := parser.ParsePrimaryExpression(); operand != nil {
+				unaryExpression.Operand = operand
+				return unaryExpression
+			} else {
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
+					"missing operand for unary expression!", ParsingUnexpected))
+				return nil
+			}
 		}
 	}
 
@@ -469,8 +492,9 @@ func (parser *Parser) TryParseBinaryExpression(left Expression) Expression {
 			castExpression.Type = typeDescription
 			return castExpression
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a type name for typing cast!", ParsingUnexpected))
+			return nil
 		}
 	} else if leftPrimary, isPrimary := left.(PrimaryExpression); // 针对 区间表达式 的特判
 	isPrimary && (parser.MatchCurrentTokenType(TokenTypeEllipsis) || parser.MatchCurrentTokenType(TokenTypeDoubleDot)) {
@@ -482,8 +506,9 @@ func (parser *Parser) TryParseBinaryExpression(left Expression) Expression {
 			rangeExpression.End = right
 			return rangeExpression // 区间表达式比较独立，不需要再额外操作
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a primary expression as range endpoint!", ParsingUnexpected))
+			return nil
 		}
 	} else if priority := GetBinaryOperatorPriority(parser.CurrentToken); priority != 99 {
 		// 证明是 二元运算符
@@ -508,8 +533,9 @@ func (parser *Parser) TryParseBinaryExpression(left Expression) Expression {
 			binaryExpression.Right = r
 			return binaryExpression
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a right node for binary expression!", ParsingUnexpected))
+			return nil
 		}
 	}
 	return left // 即一个基本的表达式而已

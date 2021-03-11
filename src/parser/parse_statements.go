@@ -77,20 +77,24 @@ func (parser *Parser) ParseSimpleStatement(needSemiEnd bool) SimpleStatement {
 			assignListStatement.Targets = primaryExprList
 
 			if !parser.MatchCurrentTokenType(TokenTypeEqual) {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected a equal mark for assignment list!", ParsingUnexpected))
+				return nil
 			}
 			assignListStatement.Token = parser.CurrentToken
 			parser.PeekNextToken() // 移过 '='
 
 			if valueList := parser.ParseExpressionList(); valueList != nil {
 				assignListStatement.Values = valueList
-				parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-					"to terminate a assignment list!")
+				if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+					"to terminate a assignment list!") {
+					return nil
+				}
 				return assignListStatement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected a list of expression as values for assignment list!", ParsingUnexpected))
+				return nil
 			}
 
 		} else if parser.MatchCurrentTokenType(TokenTypeDoublePlus) || parser.MatchCurrentTokenType(TokenTypeDoubleMinus) {
@@ -101,15 +105,19 @@ func (parser *Parser) ParseSimpleStatement(needSemiEnd bool) SimpleStatement {
 			parser.PeekNextToken() // 移过 '++'/'--'
 
 			if needSemiEnd {
-				parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-					"to terminate increase/decrease statement")
+				if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+					"to terminate increase/decrease statement") {
+					return nil
+				}
 			}
 			return incDecStatement
 		}
 
 		if needSemiEnd {
-			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-				"to terminate this statement!")
+			if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate this statement!") {
+				return nil
+			}
 		}
 		return expression // 表达式作为语句
 	}
@@ -142,16 +150,18 @@ func (parser *Parser) ParseVarDeclElement(mutable bool) *VarDeclElement {
 					// 一个变量定义元素完成，此时 token 应为 ',' 会在外部循环断言
 					return varDeclElement
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						fmt.Sprintf("expected an expression as initial value for variable '%s'", varNameToken.Str),
 						ParsingUnexpected))
+					return nil
 				}
 
 			} else if parser.MatchCurrentTokenType(TokenTypeComma) || parser.MatchCurrentTokenType(TokenTypeSemi) {
 				// 此时即没有给出初始值
 				if !mutable {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"no initial value for \"val\" declaration is not allowed!", ParsingUnexpected))
+					return nil
 				}
 				CoralCompileWarningWithPos(parser, fmt.Sprintf(`no initial value for variable: "%s".`, varNameToken.Str))
 				// 那么一个变量定义元素可以结束了，不移过逗号 ','、分号';' 而等待外部断言
@@ -166,22 +176,25 @@ func (parser *Parser) ParseVarDeclElement(mutable bool) *VarDeclElement {
 				varDeclElement.InitValue = initValue
 				return varDeclElement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					fmt.Sprintf("expected an expression as initial value to type inferring "+
 						"for the non-typed variable '%s'!", varNameToken.Str),
 					ParsingUnexpected))
+				return nil
 			}
 		} else {
 			if varDeclElement.Type == nil && varDeclElement.InitValue == nil {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"a variable initialized with neither a type descriptor nor a initial value is not allowed!",
 					ParsingUnexpected))
+				return nil
 			}
 
 			// 其他不正确的 token
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				fmt.Sprintf("unexpected token '%s' for variabel declaration!", parser.CurrentToken.Str),
 				ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -202,8 +215,10 @@ func (parser *Parser) ParseVarDeclStatement() *VarDeclStatement {
 				// 分号即应该结束此段定义语句，是否取下一个 token 看外部函数是否 needSemiEnd
 				return varDeclStatement
 			} else {
-				parser.AssertCurrentTokenIs(TokenTypeComma, "a comma",
-					"to separate multiple variable declarations!")
+				if !parser.AssertCurrentTokenIs(TokenTypeComma, "a comma",
+					"to separate multiple variable declarations!") {
+					return nil
+				}
 			}
 		}
 	}
@@ -216,8 +231,10 @@ func (parser *Parser) ParseBreakStatement() *BreakStatement {
 		breakToken := parser.CurrentToken
 		parser.PeekNextToken() // 移过 'break'
 
-		parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-			"to terminate a break statement!")
+		if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+			"to terminate a break statement!") {
+			return nil
+		}
 		return &BreakStatement{Token: breakToken}
 	}
 
@@ -229,8 +246,10 @@ func (parser *Parser) ParseContinueStatement() *ContinueStatement {
 		continueToken := parser.CurrentToken
 		parser.PeekNextToken() // 移过 'continue'
 
-		parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-			"to terminate a continue statement!")
+		if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+			"to terminate a continue statement!") {
+			return nil
+		}
 		return &ContinueStatement{Token: continueToken}
 	}
 
@@ -243,15 +262,18 @@ func (parser *Parser) ParseReturnStatement() *ReturnStatement {
 		parser.PeekNextToken() // 移过 'return'
 
 		if expressionList := parser.ParseExpressionList(); expressionList != nil {
-			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-				"to terminate a return statement!")
+			if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate a return statement!") {
+				return nil
+			}
 			return &ReturnStatement{
 				Token:      returnToken,
 				Expression: expressionList,
 			}
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an expression for return statement!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -268,8 +290,9 @@ func (parser *Parser) ParseImportElement() *ImportElement {
 				importElement.As = asName
 				return importElement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected an identifier as target's another name for import statement!", ParsingUnexpected))
+				return nil
 			}
 		}
 
@@ -316,12 +339,14 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 							parser.PeekNextToken() // 移过 '}'
 							return listImportStatement
 						} else {
-							CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+							CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 								"expected a right brace as ending for a block import statement!", ParsingUnexpected))
+							return nil
 						}
 					} else {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 							"expected at least two import element for a block import statement!", ParsingUnexpected))
+						return nil
 					}
 				} else if importElement := parser.ParseImportElement(); importElement != nil {
 					singleImportStatement := new(SingleFromImportStatement)
@@ -331,17 +356,20 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 						parser.PeekNextToken() // 移过 ';'
 						return singleImportStatement
 					} else {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 							"expected a semicolon as ending for import statement!", ParsingUnexpected))
+						return nil
 					}
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected a module name as target for import statement!", ParsingUnexpected))
+					return nil
 				}
 			}
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a module name as source for import statement!", ParsingUnexpected))
+			return nil
 		}
 	} else if parser.MatchCurrentTokenType(TokenTypeImport) {
 		parser.PeekNextToken() // 移过 'import'
@@ -356,12 +384,15 @@ func (parser *Parser) ParseImportStatement() ImportStatement {
 				}
 			} // 可能有 as xxx 令别名
 
-			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-				"to terminate a single global import statement!")
+			if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate a single global import statement!") {
+				return nil
+			}
 			return singleGlobalImport
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a source file path for importee!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -380,14 +411,16 @@ func (parser *Parser) ParseEnumElement() *EnumElement {
 				enumElement.Value = decimalLit
 				return enumElement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected a decimal literal as the enum element's value!", ParsingUnexpected))
+				return nil
 			}
 		}
 
 		if !parser.MatchCurrentTokenType(TokenTypeComma) && !parser.MatchCurrentTokenType(TokenTypeRightBrace) {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a comma to separate multiple enum elements!", ParsingUnexpected))
+			return nil
 		}
 		return enumElement
 	}
@@ -418,8 +451,9 @@ func (parser *Parser) ParseEnumStatement() *EnumStatement {
 					parser.PeekNextToken() // 移过 '}'
 					return enumStatement
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected a right brace as ending for enum definition!", ParsingUnexpected))
+					return nil
 				}
 			}
 
@@ -443,8 +477,9 @@ func (parser *Parser) ParseBlockStatement() *BlockStatement {
 			return blockStatement
 		} else {
 			// 没有正常解析到右括号
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a right brace as ending for block statement!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -460,12 +495,14 @@ func (parser *Parser) ParseIfElement() *IfElement {
 			ifElement.Block = block
 			return ifElement
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				`expected a block as a "if" block for "if" statement!`, ParsingUnexpected))
+			return nil
 		}
 	} else {
-		CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+		CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 			`expected an expression as a condition for "if" statement!`, ParsingUnexpected))
+		return nil
 	}
 
 	return nil
@@ -489,8 +526,9 @@ func (parser *Parser) ParseIfStatement() *IfStatement {
 				if elseBlock := parser.ParseBlockStatement(); elseBlock != nil {
 					ifStatement.Else = elseBlock
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						`expected a block statement for "else" statement!`, ParsingUnexpected))
+					return nil
 				}
 			}
 
@@ -509,8 +547,9 @@ func (parser *Parser) ParseElifStatements() []*IfElement {
 			if elifElement := parser.ParseIfElement(); elifElement != nil {
 				elifElements = append(elifElements, elifElement)
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					`expected an condition and block statement for "elif" statement!`, ParsingUnexpected))
+				return nil
 			}
 		} else {
 			break
@@ -535,8 +574,9 @@ func (parser *Parser) ParseSwitchCase() (SwitchStatementCase, bool) {
 					rangeCase.Block = block
 					return rangeCase, false
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected a block statement as case handler!", ParsingUnexpected))
+					return nil, false
 				}
 			} else {
 				normalCase := new(SwitchStatementNormalCase)
@@ -556,22 +596,25 @@ func (parser *Parser) ParseSwitchCase() (SwitchStatementCase, bool) {
 						normalCase.Block = normalBlock
 						return normalCase, false
 					} else {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 							"expected a block statement as case handler!", ParsingUnexpected))
+						return nil, false
 					}
 				} else {
 					if caseBlock := parser.ParseBlockStatement(); caseBlock != nil {
 						normalCase.Block = caseBlock
 						return normalCase, false
 					} else {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 							"expected a block statement as case handler!", ParsingUnexpected))
+						return nil, false
 					}
 				}
 			}
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an expression as a case!", ParsingUnexpected))
+			return nil, false
 		}
 	} else if parser.MatchCurrentTokenType(TokenTypeDefault) {
 		parser.PeekNextToken() // 移过 'default'
@@ -597,8 +640,9 @@ func (parser *Parser) ParseSwitchStatement() *SwitchStatement {
 						if defaultBlock := parser.ParseBlockStatement(); defaultBlock != nil {
 							switchStatement.Default = defaultBlock
 						} else {
-							CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+							CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 								`expected a block after 'default' keyword in switch statement!`, ParsingUnexpected))
+							return nil
 						}
 					} else {
 						switchStatement.Cases = append(switchStatement.Cases, _case)
@@ -609,14 +653,16 @@ func (parser *Parser) ParseSwitchStatement() *SwitchStatement {
 					parser.PeekNextToken() // 移过 '}'
 					return switchStatement
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected a right brace as ending for switch statement!", ParsingUnexpected))
+					return nil
 				}
 			}
 
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an expression as target for switch statement!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -635,13 +681,15 @@ func (parser *Parser) ParseWhileStatement() *WhileStatement {
 				whileStatement.Block = whileBlock
 				return whileStatement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected a block statement in while statement!", ParsingUnexpected))
+				return nil
 			}
 
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an expression as condition for while statement!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -660,11 +708,15 @@ func (parser *Parser) ParseForStatement() *ForStatement {
 		}
 
 		// 但总之需要一个分号
-		parser.AssertCurrentTokenIs(TokenTypeSemi, "the first semicolon", "in for clause!")
+		if !parser.AssertCurrentTokenIs(TokenTypeSemi, "the first semicolon", "in for clause!") {
+			return nil
+		}
 
 		if condition := parser.ParseExpression(); condition != nil {
 			forStatement.Condition = condition
-			parser.AssertCurrentTokenIs(TokenTypeSemi, "the second semicolon", "in for clause!")
+			if !parser.AssertCurrentTokenIs(TokenTypeSemi, "the second semicolon", "in for clause!") {
+				return nil
+			}
 
 			if parser.MatchCurrentTokenType(TokenTypeLeftBrace) {
 				CoralCompileWarningWithPos(parser, `a "for" loop only defined with condition, consider using 
@@ -684,14 +736,16 @@ while condition { ... } instead.`)
 				forStatement.Block = forBlock
 				return forStatement
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					`expected a block statement in "for" statement!`, ParsingUnexpected))
+				return nil
 			}
 		} else {
 			// 不允许没有 for 循环的条件，如果需要一个无限循环，提示建议用 while true
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an expression as condition in \"for\" statement!\n  "+
 					"Tips: If you need a infinite loop, please use 'while true { ... }'", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -723,20 +777,24 @@ func (parser *Parser) ParseEachStatement() *EachStatement {
 						eachStatement.Block = block
 						return eachStatement
 					} else {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 							"expected a block statement for \"each\" iteration loop!", ParsingUnexpected))
+						return nil
 					}
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected an expression as a target for \"each\" iteration loop!", ParsingUnexpected))
+					return nil
 				}
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected a \"in\" keyword for \"each\" iteration loop!", ParsingUnexpected))
+				return nil
 			}
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected at least one identifier for \"each\" iteration loop!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -786,6 +844,11 @@ func (parser *Parser) ParseArgumentList() []*Argument {
 		}
 	}
 
+	if currentInShorthand || len(noTypeDescriptorList) > 0 {
+		CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
+			"expected at least one type for all arguments!!", ParsingUnexpected))
+		return nil
+	}
 	return argList
 }
 
@@ -811,8 +874,9 @@ func (parser *Parser) ParseSignature(allowReturnNil bool) *Signature {
 			if allowReturnNil {
 				return nil
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected a right parenthesis in the function signature!", ParsingUnexpected))
+				return nil
 			}
 		}
 		parser.PeekNextToken() // 移过右括号
@@ -830,8 +894,9 @@ func (parser *Parser) ParseSignature(allowReturnNil bool) *Signature {
 				}
 			}
 			if len(signature.Throws) == 0 {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected the exceptions' type after keyword \"throws\"!", ParsingUnexpected))
+				return nil
 			}
 		}
 
@@ -867,16 +932,19 @@ func (parser *Parser) ParseGenericsArgs() *GenericArgs {
 			if parser.MatchCurrentTokenType(TokenTypeComma) {
 				parser.PeekNextTokenAvoidAngleConfusing() // 移过 ','
 				if parser.MatchCurrentTokenType(TokenTypeRightAngle) {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"generics arguments can't be end with a comma!", ParsingUnexpected))
+					return nil
 				} // 不允许出现 <T,K,>
 			} else {
 				break
 			}
 		}
 
-		parser.AssertCurrentTokenIs(TokenTypeRightAngle, "a right angle",
-			"to terminate a generics arguments!")
+		if !parser.AssertCurrentTokenIs(TokenTypeRightAngle, "a right angle",
+			"to terminate a generics arguments!") {
+			return nil
+		}
 		return genericsArg
 	}
 
@@ -904,12 +972,14 @@ func (parser *Parser) ParseFnStatement() *FunctionDeclarationStatement {
 					fnStmt.Block = fnBlock
 					return fnStmt
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected a block when defining a function statement!", ParsingUnexpected))
+					return nil
 				}
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					"expected a signature when defining a function statement!", ParsingUnexpected))
+				return nil
 			}
 		}
 	}
@@ -941,8 +1011,10 @@ func (parser *Parser) ParseClassMember() ClassMember {
 		parser.PeekNextToken()
 	}
 	if memberVarDecl := parser.ParseVarDeclStatement(); memberVarDecl != nil {
-		parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-			"to terminate a class member variable declaration!")
+		if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+			"to terminate a class member variable declaration!") {
+			return nil
+		}
 
 		classMemberVar := new(ClassMemberVar)
 		classMemberVar.Scope = scopeType
@@ -971,8 +1043,9 @@ func (parser *Parser) ParseClassStatement() *ClassDeclarationStatement {
 				if extends := parser.ParseClassIdentifier(); extends != nil {
 					classStmt.Extends = extends
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected an class identifier for extended class name!", ParsingUnexpected))
+					return nil
 				}
 			} // 也可能没有继承
 
@@ -989,8 +1062,10 @@ func (parser *Parser) ParseClassStatement() *ClassDeclarationStatement {
 				}
 			}
 
-			parser.AssertCurrentTokenIs(TokenTypeLeftBrace, "a left brace",
-				"to start the class statement definition body!")
+			if !parser.AssertCurrentTokenIs(TokenTypeLeftBrace, "a left brace",
+				"to start the class statement definition body!") {
+				return nil
+			}
 
 			hasInitMethod := false
 			for member := parser.ParseClassMember(); member != nil; member = parser.ParseClassMember() {
@@ -1000,10 +1075,11 @@ func (parser *Parser) ParseClassStatement() *ClassDeclarationStatement {
 					hasInitMethod = true
 					method.Scope = ClassMemberScopePublic // 构造方法默认 public
 					if len(method.MethodDecl.Signature.Returns) > 0 {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+						CoralCompileErrorWithPos(parser, NewCoralError("Compile",
 							fmt.Sprintf("Any returns by constructor method of class \"%s\" are not allowed!",
 								classId.Name.Token.Str),
 							NoConstructorMethod))
+						return nil
 					}
 				}
 				if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
@@ -1012,19 +1088,23 @@ func (parser *Parser) ParseClassStatement() *ClassDeclarationStatement {
 			}
 
 			if !hasInitMethod {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				CoralCompileErrorWithPos(parser, NewCoralError("Compile",
 					fmt.Sprintf("expected a constructor for class \"%s\"!", classId.Name.Token.Str),
 					NoConstructorMethod))
+				return nil
 			} // <- 没有构造函数的报错
 
-			parser.AssertCurrentTokenIs(TokenTypeRightBrace, "a right brace",
-				"to terminate the class statement definition body!")
+			if !parser.AssertCurrentTokenIs(TokenTypeRightBrace, "a right brace",
+				"to terminate the class statement definition body!") {
+				return nil
+			}
 
 			return classStmt
 
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an class identifier for class name!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -1040,8 +1120,10 @@ func (parser *Parser) ParseInterfaceMethodDecl() *InterfaceMethodDeclaration {
 		parser.PeekNextToken()
 	}
 
-	parser.AssertCurrentTokenIs(TokenTypeFn, "keyword \"fn\"",
-		"to start the announcement of the method in interface declaration statement!")
+	if !parser.AssertCurrentTokenIs(TokenTypeFn, "keyword \"fn\"",
+		"to start the announcement of the method in interface declaration statement!") {
+		return nil
+	}
 
 	methodDecl := new(InterfaceMethodDeclaration)
 	methodDecl.Scope = scopeType
@@ -1055,14 +1137,17 @@ func (parser *Parser) ParseInterfaceMethodDecl() *InterfaceMethodDeclaration {
 		if signature := parser.ParseSignature(false); signature != nil {
 			methodDecl.Signature = signature
 
-			parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
-				"to terminate a interface method declaration!")
+			if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",
+				"to terminate a interface method declaration!") {
+				return nil
+			}
 
 			return methodDecl
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				fmt.Sprintf("expected a function signature for method \"%s\"!", interfaceName.Token.Str),
 				ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -1082,21 +1167,25 @@ func (parser *Parser) ParseInterfaceStatement() *InterfaceDeclarationStatement {
 				if extends := parser.ParseClassIdentifier(); extends != nil {
 					interfaceStmt.Extends = extends
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected an class identifier for extended class name!", ParsingUnexpected))
+					return nil
 				}
 			} // 也可能没有继承
 
-			parser.AssertCurrentTokenIs(TokenTypeLeftBrace, "a left brace",
-				"to start the interface statement definition body!")
+			if !parser.AssertCurrentTokenIs(TokenTypeLeftBrace, "a left brace",
+				"to start the interface statement definition body!") {
+				return nil
+			}
 
 			for method := parser.ParseInterfaceMethodDecl(); method != nil; method = parser.ParseInterfaceMethodDecl() {
 				interfaceStmt.Methods = append(interfaceStmt.Methods, method)
 
 				if method.Name.Token.Str == interfaceId.Name.Token.Str {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+					CoralCompileErrorWithPos(parser, NewCoralError("Compile",
 						fmt.Sprintf("method name being the same with interface name \"%s\"", interfaceId.Name.Token.Str),
 						MethodNameSameWithInterfaceName))
+					return nil
 				} // 方法名不能与接口名相同！
 
 				if parser.MatchCurrentTokenType(TokenTypeRightBrace) {
@@ -1105,19 +1194,23 @@ func (parser *Parser) ParseInterfaceStatement() *InterfaceDeclarationStatement {
 			}
 
 			if len(interfaceStmt.Methods) == 0 {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Compile",
+				CoralCompileErrorWithPos(parser, NewCoralError("Compile",
 					fmt.Sprintf("expected at least one method for interface \"%s\"!", interfaceId.Name.Token.Str),
 					EmptyInterfaceDeclaration))
+				return nil
 			} // <- 空接口
 
-			parser.AssertCurrentTokenIs(TokenTypeRightBrace, "a right brace",
-				"to terminate the interface statement definition body!")
+			if !parser.AssertCurrentTokenIs(TokenTypeRightBrace, "a right brace",
+				"to terminate the interface statement definition body!") {
+				return nil
+			}
 
 			return interfaceStmt
 
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an class identifier for interface name!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -1140,18 +1233,21 @@ func (parser *Parser) ParseErrorCatchHandler() *ErrorCatchHandler {
 
 					return errHandler
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						fmt.Sprintf("expected a block as handler for exception \"%s\"!", errId.Token.Str),
 						ParsingUnexpected))
+					return nil
 				}
 			} else {
-				CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 					fmt.Sprintf("expected a type descriptor for exception \"%s\"!", errId.Token.Str),
 					ParsingUnexpected))
+				return nil
 			}
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected an identifier for exception name after keyword \"catch\"!", ParsingUnexpected))
+			return nil
 		}
 	}
 
@@ -1177,16 +1273,18 @@ func (parser *Parser) ParseTryCatchStatement() *TryCatchStatement {
 
 					return tryCatchStmt
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						fmt.Sprintf("expected a block after keyword \"finally\"!"),
 						ParsingUnexpected))
+					return nil
 				}
 			} // 也可能无 finally
 
 			return tryCatchStmt
 		} else {
-			CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+			CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 				"expected a block statement after keyword \"try\"!", ParsingUnexpected))
+			return nil
 		}
 	}
 

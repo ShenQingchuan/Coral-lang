@@ -41,14 +41,17 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 				if arrLenLiteral, isDecimal := parser.ParseLiteral().(*DecimalLit); isDecimal && arrLenLiteral != nil {
 					arrLen, convertErr := strconv.Atoi(arrLenLiteral.Value.Str)
 					if convertErr != nil {
-						CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+						CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 							"expected a decimal number as array length declaration!", ParsingUnexpected))
+						return nil
 					}
 					arrayLit.ArrayLength = arrLen
 				}
 
-				parser.AssertCurrentTokenIs(TokenTypeRightBracket, "a right bracket",
-					"to terminate a array type descriptor!")
+				if !parser.AssertCurrentTokenIs(TokenTypeRightBracket, "a right bracket",
+					"to terminate a array type descriptor!") {
+					return nil
+				}
 				return arrayLit
 			} else {
 				// 否则就将 typeName 返回作为该 typeDescription
@@ -67,9 +70,10 @@ func (parser *Parser) ParseTypeDescription() TypeDescription {
 					parser.PeekNextToken() // 移过右括号
 					break                  // 结束函数类型参数部分解析
 				} else {
-					CoralErrorCrashHandlerWithPos(parser, NewCoralError("Syntax",
+					CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 						"expected a comma to separate arguments' type or right parenthesis to terminate in function type!",
 						ParsingUnexpected))
+					return nil
 				}
 			}
 		}
