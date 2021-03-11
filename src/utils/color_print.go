@@ -13,10 +13,12 @@ const (
 	textWhite
 )
 
+func textColor(color int, str string) string {
+	return fmt.Sprintf("\x1b[0;%dm%s\x1b[0m", color, str)
+}
 func Black(str string) string {
 	return textColor(textBlack, str)
 }
-
 func Red(str string) string {
 	return textColor(textRed, str)
 }
@@ -39,6 +41,6 @@ func White(str string) string {
 	return textColor(textWhite, str)
 }
 
-func textColor(color int, str string) string {
-	return fmt.Sprintf("\x1b[0;%dm%s\x1b[0m", color, str)
+func Bold(coloredString string) string {
+	return "\x1b[1m" + coloredString
 }

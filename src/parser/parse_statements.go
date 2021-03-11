@@ -504,8 +504,6 @@ func (parser *Parser) ParseIfElement() *IfElement {
 			`expected an expression as a condition for "if" statement!`, ParsingUnexpected))
 		return nil
 	}
-
-	return nil
 }
 
 func (parser *Parser) ParseIfStatement() *IfStatement {
@@ -816,7 +814,7 @@ func (parser *Parser) ParseArgument() *Argument {
 	return nil
 }
 
-func (parser *Parser) ParseArgumentList() []*Argument {
+func (parser *Parser) ParseArgumentList(allowIgnoreTyping bool) []*Argument {
 	var argList []*Argument
 	var noTypeDescriptorList []*Argument
 	currentInShorthand := false
@@ -833,6 +831,7 @@ func (parser *Parser) ParseArgumentList() []*Argument {
 					argList = append(argList, noTypingArg)
 				}
 				noTypeDescriptorList = make([]*Argument, 0) // 让 GC 回收原队列切片内存
+				currentInShorthand = false // 重置标志
 			}
 		}
 		argList = append(argList, arg)
@@ -844,7 +843,8 @@ func (parser *Parser) ParseArgumentList() []*Argument {
 		}
 	}
 
-	if currentInShorthand || len(noTypeDescriptorList) > 0 {
+	// 此时的 parse 进行时不允许省略类型标注，最后又仍是所有变量没类型：
+	if !allowIgnoreTyping && currentInShorthand {
 		CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
 			"expected at least one type for all arguments!!", ParsingUnexpected))
 		return nil
@@ -865,13 +865,13 @@ func (parser *Parser) ParseReturnList() []TypeDescription {
 	return returnList
 }
 
-func (parser *Parser) ParseSignature(allowReturnNil bool) *Signature {
+func (parser *Parser) ParseSignature(allowMismatched bool, allowIgnoreTyping bool) *Signature {
 	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		parser.PeekNextToken() // 移过左括号
 		signature := new(Signature)
-		signature.Arguments = parser.ParseArgumentList()
+		signature.Arguments = parser.ParseArgumentList(allowIgnoreTyping)
 		if !parser.MatchCurrentTokenType(TokenTypeRightParen) {
-			if allowReturnNil {
+			if allowMismatched {
 				return nil
 			} else {
 				CoralCompileErrorWithPos(parser, NewCoralError("Syntax",
@@ -965,7 +965,7 @@ func (parser *Parser) ParseFnStatement() *FunctionDeclarationStatement {
 				fnStmt.Generics = fnGenerics
 			} // 函数也可能没有泛型参数
 
-			if signature := parser.ParseSignature(false); signature != nil {
+			if signature := parser.ParseSignature(false, false); signature != nil {
 				fnStmt.Signature = signature
 
 				if fnBlock := parser.ParseBlockStatement(); fnBlock != nil {
@@ -1134,7 +1134,7 @@ func (parser *Parser) ParseInterfaceMethodDecl() *InterfaceMethodDeclaration {
 			methodDecl.Generics = methodGenerics
 		} // 也可能没有泛型参数
 
-		if signature := parser.ParseSignature(false); signature != nil {
+		if signature := parser.ParseSignature(false, false); signature != nil {
 			methodDecl.Signature = signature
 
 			if !parser.AssertCurrentTokenIs(TokenTypeSemi, "a semicolon",

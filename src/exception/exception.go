@@ -15,7 +15,7 @@ type CoralCompileError struct {
 
 func NewCoralError(prefixDescription string, msg string, errEnum int) *CoralCompileError {
 	return &CoralCompileError{
-		errors.New("\n* " + Red(prefixDescription+" Error: ") + msg),
+		errors.New("\n* " + Bold(Red(prefixDescription+" Error: ")) + msg),
 		errEnum,
 	}
 }
@@ -27,8 +27,8 @@ func CoralErrorCrashHandler(c *CoralCompileError) {
 }
 
 func CoralCompileWarning(msg string) {
-	fmt.Println("\n" + Yellow("* Warning: "))
+	fmt.Println("\n" + Bold(Yellow("* Warning: ")))
 	for _, str := range strings.Split(msg, "\n") {
-		fmt.Println("\t" + White(str))
+		fmt.Println("\t" + str)
 	}
 }

@@ -21,7 +21,7 @@ type Parser struct {
 
 func CoralCompileErrorWithPos(parser *Parser, c *CoralCompileError) {
 	if parser.LastToken != nil {
-		fmt.Print("\n" + Green(fmt.Sprintf("* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col)))
+		fmt.Print("\n" + Bold(Green(fmt.Sprintf("* line %d:%d ", parser.LastToken.Line, parser.LastToken.Col))))
 	}
 	fmt.Println(c.Err)
 
@@ -60,7 +60,6 @@ func CoralCompileErrorWithPos(parser *Parser, c *CoralCompileError) {
 		}
 	}
 
-	fmt.Println("* " + Cyan(fmt.Sprintf("Error code: %d", c.ErrEnum)))
 	parser.ErrCount++
 }
 func CoralCompileWarningWithPos(parser *Parser, msg string) {
@@ -125,6 +124,6 @@ func (parser *Parser) ParseProgram() *Program {
 		program.Root = append(program.Root, stmt)
 	}
 
-	fmt.Println("\n" + Yellow(fmt.Sprintf("(total %d error, %d warning)", parser.ErrCount, parser.WarnCount)))
+	fmt.Println("\n" + Yellow(fmt.Sprintf("(Parser: %d error, %d warning)", parser.ErrCount, parser.WarnCount)))
 	return program
 }
