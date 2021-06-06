@@ -138,7 +138,8 @@ type Lexer struct {
 func OpenSourceFile(filePath string) []byte {
 	file, err := os.Open(filePath)
 	if err != nil {
-		CoralErrorCrashHandler(NewCoralError("FileSystem", "Can'Token open source file: "+filePath, FileSystemOpenFileError))
+		CoralErrorCrashHandler(NewCoralError("FileSystem",
+			"Can't open source file: "+filePath, FileSystemOpenFileError))
 	}
 	if file != nil {
 		defer file.Close()
@@ -312,7 +313,7 @@ func (lexer *Lexer) ReadOctal() (*Token, *CoralCompileError) {
 
 // 读出一个二进制整数的 Token
 func (lexer *Lexer) ReadBinary() (*Token, *CoralCompileError) {
-	lexer.GoNextCharByStep(2) // 跳过 '0o'
+	lexer.GoNextCharByStep(2) // 跳过 '0b'
 	str := "0b"
 	for lexer.PeekChar().IsLegalBinary() {
 		str += string(lexer.PeekChar().Rune)
@@ -372,7 +373,8 @@ func (lexer *Lexer) ReadDecimal(startFromZero bool) (*Token, *CoralCompileError)
 				}
 			} else {
 				// 科学记数法格式错误
-				return nil, NewCoralError("Syntax", "incorrect format for scientific notation!", LexExponentFormatError)
+				return nil, NewCoralError("Syntax",
+					"incorrect format for scientific notation!", LexExponentFormatError)
 			}
 		} else {
 			break // 不符合十进制整数、小数和科学记数法的格式条件
@@ -444,7 +446,7 @@ func (lexer *Lexer) ReadString() (*Token, *CoralCompileError) {
 				if unicodeBitCount != 4 {
 					// 说明不满 4 位，解码出错
 					return nil, NewCoralError("Syntax",
-						"(unicode error) 'unicodeEscape' codec can'Token decode bytes in position 0-3: truncated \\uXXXX escape",
+						"Unicode points format error: can't decode escaped unicode \\u"+sUnicode,
 						LexUnicodeEscapeFormatError)
 				}
 				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 4)
@@ -517,7 +519,8 @@ func (lexer *Lexer) ReadRune() (*Token, *CoralCompileError) {
 				}
 				if unicodeBitCount != 4 {
 					// 说明不满 4 位，解码出错
-					return nil, NewCoralError("Syntax", "(unicode error) 'unicodeEscape' codec can'Token decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
+					return nil, NewCoralError("Syntax",
+						"(unicode error) 'unicodeEscape' codec can't decode bytes in position 0-3: truncated \\uXXXX escape", LexUnicodeEscapeFormatError)
 				}
 				gotUTF8Decoded := utils.UnicodeToUTF8(sUnicode, 4)
 				str += gotUTF8Decoded
@@ -556,7 +559,7 @@ func (lexer *Lexer) ReadIdentifier() (*Token, *CoralCompileError) {
 	// 读入第一个字符
 	str := string(lexer.PeekChar().Rune)
 	if firstRuneMatcher.MatchString(str) {
-		return nil, NewCoralError("Syntax", "Digit can'Token be used for the first character of an identifier!", LexIdentifierFirstRuneCanNotBeDigit)
+		return nil, NewCoralError("Syntax", "Digit can't be used for the first character of an identifier!", LexIdentifierFirstRuneCanNotBeDigit)
 	}
 	lexer.GoNextChar()
 	for lexer.BytePos < len(lexer.Content) &&

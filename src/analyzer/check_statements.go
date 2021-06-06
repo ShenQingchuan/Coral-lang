@@ -17,7 +17,6 @@ func (analyzer *Analyzer) CheckStatement(stmt Statement) {
 		blockStmt := stmt.(*BlockStatement)
 		analyzer.CheckBlockStatement(blockStmt)
 		analyzer.LeaveCurrentBlockScope()
-	case StatementTypeTryCatch:
 	case StatementTypeIf:
 	case StatementTypeSwitch:
 	case StatementTypeWhile:
@@ -26,6 +25,7 @@ func (analyzer *Analyzer) CheckStatement(stmt Statement) {
 	case StatementTypeFunctionDecl:
 	case StatementTypeClassDecl:
 	case StatementTypeInterfaceDecl:
+	case StatementTypeTryCatch:
 	}
 }
 

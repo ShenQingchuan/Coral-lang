@@ -157,12 +157,12 @@ coral run hello.cr
 
 <h2 id="_5">终结分隔符</h2>
 <p>在 Coral 程序中，每个语句正如 C 家族中的其它语言一样以分号 <code>;</code> 结尾。以下为两个语句：</p>
-<pre><code class="coral">var msg = &quot;Hello World&quot;
+<pre><code class="coral">var msg = &quot;Hello World&quot;;
 println(msg);
 </code></pre>
 
 <h2 id="_6">注释</h2>
-<p>注释不会被编译，甚至在词法分析阶段就被忽略了。</p>
+<p>注释不会被编译，甚至在词法分析阶段就被忽略了。（暂未计划支持任何从注释导出 Doc 的格式）</p>
 <p>单行注释是最常见的注释形式，你可以在任何地方使用以 <code>//</code> 开头的单行注释。多行注释也叫块注释，均已以 <code>/*</code> 开头，并以 <code>*/</code> 结尾。如：</p>
 <p>块注释编译时允许嵌套，但最多 5 层，具体可查看源代码 <code>lexer</code> 部分的实现。</p>
 <pre><code class="coral">// 单行注释
