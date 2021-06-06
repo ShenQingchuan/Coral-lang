@@ -30,7 +30,7 @@ const (
 
 	// 定义简单语句的种类来区分
 	SimpleStmtTypeExpression
-	SimpleStmtIncDecStmt
+	SimpleStmtTypeIncDecStmt
 	SimpleStmtTypeVariableDecl
 	SimpleStmtTypeAssignList
 
