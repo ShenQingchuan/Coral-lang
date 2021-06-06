@@ -4,6 +4,7 @@ import (
 	. "coral-lang/src/ast"
 	. "coral-lang/src/exception"
 	. "coral-lang/src/lexer"
+	. "coral-lang/src/utils"
 	"fmt"
 )
 
@@ -163,7 +164,7 @@ func (parser *Parser) ParseVarDeclElement(mutable bool) *VarDeclElement {
 						"no initial value for \"val\" declaration is not allowed!", ParsingUnexpected))
 					return nil
 				}
-				CoralCompileWarningWithPos(parser, fmt.Sprintf(`no initial value for variable: "%s".`, varNameToken.Str))
+				CoralCompileWarningWithPos(parser, fmt.Sprintf(`no initial value for variable: "%s".`, Blue(varNameToken.Str)))
 				// 那么一个变量定义元素可以结束了，不移过逗号 ','、分号';' 而等待外部断言
 				return varDeclElement
 			}
@@ -831,7 +832,7 @@ func (parser *Parser) ParseArgumentList(allowIgnoreTyping bool) []*Argument {
 					argList = append(argList, noTypingArg)
 				}
 				noTypeDescriptorList = make([]*Argument, 0) // 让 GC 回收原队列切片内存
-				currentInShorthand = false // 重置标志
+				currentInShorthand = false                  // 重置标志
 			}
 		}
 		argList = append(argList, arg)
@@ -866,9 +867,13 @@ func (parser *Parser) ParseReturnList() []TypeDescription {
 }
 
 func (parser *Parser) ParseSignature(allowMismatched bool, allowIgnoreTyping bool) *Signature {
+	signature := new(Signature)
+	if fnGenerics := parser.ParseGenericsArgs(); fnGenerics != nil {
+		signature.Generics = fnGenerics
+	} // 函数签名也可能没有泛型参数
+
 	if parser.MatchCurrentTokenType(TokenTypeLeftParen) {
 		parser.PeekNextToken() // 移过左括号
-		signature := new(Signature)
 		signature.Arguments = parser.ParseArgumentList(allowIgnoreTyping)
 		if !parser.MatchCurrentTokenType(TokenTypeRightParen) {
 			if allowMismatched {
@@ -960,10 +965,6 @@ func (parser *Parser) ParseFnStatement() *FunctionDeclarationStatement {
 			// 取 Identifier 结束后，GetNextToken 时避免读取 << 导致词法解析错误
 			// avoidAngleConfusing 这个项不会影响到其他类型 Token 的解析，只是于尖括号的解析相关
 			fnStmt.Name = fnName
-
-			if fnGenerics := parser.ParseGenericsArgs(); fnGenerics != nil {
-				fnStmt.Generics = fnGenerics
-			} // 函数也可能没有泛型参数
 
 			if signature := parser.ParseSignature(false, false); signature != nil {
 				fnStmt.Signature = signature

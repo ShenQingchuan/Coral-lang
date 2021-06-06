@@ -37,7 +37,7 @@ func Blue(str string) string {
 func Purple(str string) string {
 	return textColor(textPurple, str)
 }
-func White(str string) string {
+func Gray(str string) string {
 	return textColor(textWhite, str)
 }
 

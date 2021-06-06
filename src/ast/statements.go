@@ -4,57 +4,6 @@ import (
 	. "coral-lang/src/lexer"
 )
 
-// 定义所有语句的种类来区分
-const (
-	StatementTypeSimple = iota
-	StatementTypePackage
-	StatementTypeImport
-	StatementTypeEnum
-	StatementTypeBlock
-	StatementTypeTryCatch
-	StatementTypeIf
-	StatementTypeSwitch
-	StatementTypeWhile
-	StatementTypeFor
-	StatementTypeEach
-	StatementTypeFunctionDecl
-	StatementTypeClassDecl
-	StatementTypeInterfaceDecl
-)
-
-// 定义引入外部模块语句的种类来区分
-const (
-	ImportStatementTypeSingleGlobal = iota
-	ImportStatementTypeSingleFrom
-	ImportStatementTypeList
-)
-
-// 定义简单语句的种类来区分
-const (
-	SimpleStmtTypeExpression = iota
-	SimpleStmtIncDecStmt
-	SimpleStmtTypeVariableDecl
-	SimpleStmtTypeAssignList
-)
-
-// 定义条件语句匹配项的种类来区分
-const (
-	SwitchStatementTypeNormal = iota
-	SwitchStatementTypeRange
-)
-
-// 定义类成员的种类来区分
-const (
-	ClassMemberTypeVar = iota
-	ClassMemberTypeMethod
-)
-
-// 类成员的公开与否 枚举：
-const (
-	ClassMemberScopePrivate = iota
-	ClassMemberScopePublic
-)
-
 type ClassMemberScopeType int
 
 // 返回语句节点
@@ -391,6 +340,7 @@ func (it *Argument) NodeType() string {
 
 // 函数签名
 type Signature struct {
+	Generics  *GenericArgs
 	Arguments []*Argument
 	Returns   []TypeDescription
 	Throws    []TypeDescription
@@ -403,7 +353,6 @@ func (it *Signature) NodeType() string {
 // 函数定义语句
 type FunctionDeclarationStatement struct {
 	Name      *Identifier
-	Generics  *GenericArgs
 	Signature *Signature
 	Block     *BlockStatement
 }

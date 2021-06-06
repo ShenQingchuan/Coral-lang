@@ -358,7 +358,7 @@ func (parser *Parser) ParseLiteral() Literal {
 				return nil
 			}
 			return &TableLit{KeyValueList: elements}
-		case TokenTypeLeftParen:
+		case TokenTypeLeftParen, TokenTypeLeftAngle:
 			if signature := parser.ParseSignature(true, true); signature != nil {
 				lambdaLit := new(LambdaLit)
 				lambdaLit.Signature = signature

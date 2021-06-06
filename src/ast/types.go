@@ -1,13 +1,5 @@
 package ast
 
-// 定义类型标注的种类来区分
-const (
-	TypeDescriptionTypeName = iota
-	TypeDescriptionFunction
-	TypeDescriptionTypeArrayLit
-	TypeDescriptionTypeGenerics
-)
-
 // 类型标注节点
 type TypeDescription interface {
 	Node

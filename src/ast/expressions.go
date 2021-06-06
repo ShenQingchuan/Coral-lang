@@ -4,50 +4,6 @@ import (
 	. "coral-lang/src/lexer"
 )
 
-// 定义表达式的类型来区分
-const (
-	ExpressionTypePrimary = iota
-	ExpressionTypeNewInstance
-	ExpressionTypeUnary
-	ExpressionTypeBinary
-	ExpressionTypeRange
-)
-
-// 定义基本表达式的类型来区分
-const (
-	PrimaryExprTypeBasic = iota
-	PrimaryExprTypeIndex
-	PrimaryExprTypeSlice
-	PrimaryExprTypeCall
-	PrimaryExprTypeMember
-)
-
-// 定义操作数的类型来区分
-const (
-	OperandTypeLiteral = iota
-	OperandTypeName
-)
-
-// 定义字面量的类型来区分
-const (
-	LiteralNodeTypeNil = iota
-	LiteralNodeTypeTrue
-	LiteralNodeTypeFalse
-	LiteralNodeTypeDecimal
-	LiteralNodeTypeHexadecimal
-	LiteralNodeTypeOctal
-	LiteralNodeTypeBinary
-	LiteralNodeTypeFloat
-	LiteralNodeTypeExponent
-	LiteralNodeTypeChar
-	LiteralNodeTypeString
-	LiteralNodeTypeArray
-	LiteralNodeTypeMap
-	LiteralNodeTypeLambda
-	LiteralNodeTypeThis
-	LiteralNodeTypeSuper
-)
-
 // ----- 各种字面量 ------
 
 // nil

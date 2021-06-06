@@ -38,23 +38,29 @@ func CoralCompileErrorWithPos(parser *Parser, c *CoralCompileError) {
 		fmt.Printf("| %s\n", lines[startLineIndex+i])
 		if startLineIndex+i == parser.LastToken.Line-1 {
 			trimmed := false
+			trimmedCount := 0
 			for k := 0; k < 6; k++ {
 				fmt.Print(" ")
 			}
-			for j := 0; j < parser.LastToken.Col; j++ {
+			for j := 0; j < parser.LastToken.Col-1; j++ {
 				if !trimmed {
 					if lines[startLineIndex+i][j] == ' ' {
 						fmt.Print(" ")
+						trimmedCount++
 						continue
 					} else if lines[startLineIndex+i][j] == '\t' {
 						fmt.Print("  ")
+						trimmedCount += 2
 						continue
 					} else {
 						trimmed = true
 					}
 				}
 
-				fmt.Print(Yellow("∼"))
+				fmt.Print(Yellow("."))
+			}
+			for n := 0; n < trimmedCount; n++ {
+				fmt.Print(Yellow("."))
 			}
 			fmt.Print(Red("^") + "\n")
 		}

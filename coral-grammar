@@ -190,8 +190,8 @@ eachStmt ::= 'each' IDENTIFIER (',' IDENTIFIER)? 'in' expression blockStmt
 argument ::= IDENTIFIER typeDescription
 argumentList ::= argument (',' argument)*
 resultList ::= typeDescription (',' typeDescription)*
-signature ::= '(' argumentList* ')' resultList? ('throws' typeDescription)?
-functionDeclaration ::= 'fn' IDENTIFIER genericsArgs signature blockStmt
+signature ::= genericsArgs '(' argumentList* ')' resultList? ('throws' typeDescription)?
+functionDeclaration ::= 'fn' IDENTIFIER signature blockStmt
 
 /* classStmt Example:
     class VideoDisk<T, K> : Disk<K> <- Playable<T> {

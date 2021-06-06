@@ -103,6 +103,20 @@ func TestParseLiteral(t *testing.T) {
 		So(call.Params[0].(*BasicPrimaryExpression).It.(*LambdaLit).Signature.Arguments[0].Name.Token.Str,
 			ShouldEqual, "f")
 	})
+
+	Convey("测试以 lambda 函数新建变量", t, func() {
+		parser := new(Parser)
+		parser.InitFromString(`
+		var a = <T>(x T) T -> {
+			return _chain(x);
+		};`)
+		So(parser.CurrentToken.Str, ShouldEqual, "var")
+
+		lambdaVar, isVarDecl := parser.ParseStatement().(*VarDeclStatement)
+		So(isVarDecl, ShouldEqual, true)
+		lambdaLit := lambdaVar.Declarations[0].InitValue.(*BasicPrimaryExpression).It.(*LambdaLit)
+		So(lambdaLit.Signature.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+	})
 }
 func TestBinaryExpression(t *testing.T) {
 	Convey("测试二元表达式：1", t, func() {
@@ -808,8 +822,8 @@ func TestFnStatement(t *testing.T) {
 		So(isFn, ShouldEqual, true)
 
 		So(fnStatement.Name.Token.Str, ShouldEqual, "initMapWithAPair")
-		So(fnStatement.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
-		So(fnStatement.Generics.Args[1].ArgName.Token.Str, ShouldEqual, "K")
+		So(fnStatement.Signature.Generics.Args[0].ArgName.Token.Str, ShouldEqual, "T")
+		So(fnStatement.Signature.Generics.Args[1].ArgName.Token.Str, ShouldEqual, "K")
 		So(fnStatement.Signature.Arguments[0].Name.Token.Str, ShouldEqual, "n1")
 		So(fnStatement.Signature.Arguments[0].Type.(*TypeName).Identifier.Token.Str, ShouldEqual, "T")
 		So(fnStatement.Signature.Arguments[1].Name.Token.Str, ShouldEqual, "n2")
